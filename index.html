@@ -373,6 +373,7 @@
             <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 6" step="1" min="0">
             <span class="unit">meses</span>
           </div>
+          <p class="info-text">Ingrese edad en meses (ej. 6 para 6 meses; 24 para 2 años)</p>
           <p id="edad-error" class="text-red-500 text-xs mt-1 hidden"></p>
         </div>
       </div>
@@ -565,6 +566,18 @@
           <i class="fas fa-info-circle mr-2 text-[#FF3D7F]"></i>Fórmulas de aportes
         </h3>
         <div id="hollidayOriginal" class="text-sm">
+          <!-- Contenido generado dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Nutrición -->
+      <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-[#7FC7AF] text-white p-4">
+          <h3 class="text-lg font-bold flex items-center">
+            <i class="fas fa-utensils mr-2"></i> Nutrición pediátrica de referencia
+          </h3>
+        </div>
+        <div id="nutricionReferencia" class="p-4 text-sm space-y-4">
           <!-- Contenido generado dinámicamente -->
         </div>
       </div>
@@ -769,6 +782,23 @@
       severa: { kg: [250, 270], m2: [3500, 4000], label: "Deshidratación severa" }
     };
 
+    const NUTRICION_LACTANTES = [
+      { alimento: "Nan 14%", calorias: "73", proteinas: "1,3", hdc: "8,1", lipidos: "3,9" },
+      { alimento: "FL 7,5%", calorias: "72", proteinas: "2,2", hdc: "9,1", lipidos: "3" },
+      { alimento: "FL 10%", calorias: "79", proteinas: "3", hdc: "10,3", lipidos: "2,9" },
+      { alimento: "Papilla 100 cc", calorias: "100", proteinas: "2,6-3,2", hdc: "11,8-13,3", lipidos: "4,6" },
+      { alimento: "Compota frutas 50 cc", calorias: "33", proteinas: "0,2", hdc: "7,6", lipidos: "0,2" },
+      { alimento: "Papilla 200 cc", calorias: "200", proteinas: "5,2-6,5", hdc: "23,3-26,6", lipidos: "9,1-9,2" }
+    ];
+
+    const NUTRICION_FORMULAS_ESPECIALES = [
+      { alimento: "Pediasure 20%", calorias: "100", proteinas: "3", hdc: "10,9", lipidos: "4,9" },
+      { alimento: "Peptijunior 10%", calorias: "52", proteinas: "1,4", hdc: "5,2", lipidos: "2,8" },
+      { alimento: "PreNan 20%", calorias: "100", proteinas: "2,9", hdc: "10,6", lipidos: "5,1" },
+      { alimento: "Neocate 10%", calorias: "48", proteinas: "1,3", hdc: "5,4", lipidos: "2,3" },
+      { alimento: "Nan sin lactosa 20%", calorias: "101", proteinas: "2,2", hdc: "11,7", lipidos: "5" }
+    ];
+
     const PREPARACIONES = {
       sodio35: {
         nombre: "Sodio 35",
@@ -879,6 +909,7 @@
       const electrolitos = calcularRequerimientosElectrolitos(pesoKg);
       const solucionOptima = calcularSolucionRecomendada(total24h, preparacion, condiciones);
       mostrarFormulaHollidaySegar(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
+      mostrarNutricionReferencia(edad);
       mostrarNotasClinicas(solucionOptima, condiciones, edad, categoria);
       document.getElementById("solucionesAlternativas").classList.add("hidden");
       document.getElementById("resultado").classList.remove("hidden");
@@ -940,16 +971,68 @@
       };
     }
 
+    function renderTablaNutricion(datos) {
+      return `
+        <div class="overflow-x-auto">
+          <table class="min-w-full border border-gray-200 text-xs md:text-sm">
+            <thead class="bg-[#DAD8A7]/40">
+              <tr>
+                <th class="border border-gray-200 px-2 py-1 text-left">Alimento</th>
+                <th class="border border-gray-200 px-2 py-1 text-left">Calorías</th>
+                <th class="border border-gray-200 px-2 py-1 text-left">Proteínas (g)</th>
+                <th class="border border-gray-200 px-2 py-1 text-left">HdC (g)</th>
+                <th class="border border-gray-200 px-2 py-1 text-left">Lípidos (g)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${datos.map(item => `
+                <tr>
+                  <td class="border border-gray-200 px-2 py-1 font-medium">${item.alimento}</td>
+                  <td class="border border-gray-200 px-2 py-1">${item.calorias}</td>
+                  <td class="border border-gray-200 px-2 py-1">${item.proteinas}</td>
+                  <td class="border border-gray-200 px-2 py-1">${item.hdc}</td>
+                  <td class="border border-gray-200 px-2 py-1">${item.lipidos}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }
+
+    function mostrarNutricionReferencia(edadMeses) {
+      const container = document.getElementById("nutricionReferencia");
+      if (!container) return;
+
+      const grupo = edadMeses < 24
+        ? "Lactante: promover lactancia materna a libre demanda; si corresponde, indicar fórmula láctea, volumen, fraccionamiento y papilla según desarrollo y tolerancia."
+        : edadMeses < 72
+          ? "Preescolar: considerar régimen preescolar común, liviano, blando sin residuos, líquido o hídrico según indicación clínica."
+          : "Escolar/adolescente: considerar régimen escolar común, liviano, blando sin residuos, líquido o hídrico según indicación clínica.";
+
+      container.innerHTML = `
+        <div class="clinical-note success p-3 rounded-md">
+          <p class="font-semibold text-[#3FB8AF]"><i class="fas fa-child mr-1"></i>Orientación por edad</p>
+          <p class="mt-1">${grupo}</p>
+        </div>
+        <div>
+          <p class="font-semibold text-[#3FB8AF] mb-2">Lactantes y papillas (aportes por porción indicada)</p>
+          ${renderTablaNutricion(NUTRICION_LACTANTES)}
+        </div>
+        <div>
+          <p class="font-semibold text-[#3FB8AF] mb-2">Fórmulas especiales (aportes por preparación indicada)</p>
+          ${renderTablaNutricion(NUTRICION_FORMULAS_ESPECIALES)}
+        </div>`;
+    }
+
     function mostrarNotasClinicas(solucion, condiciones, edadMeses, categoria) {
       const container = document.getElementById("notasClinicas");
       container.innerHTML = "";
       container.classList.remove("hidden");
       const notas = [
         { tipo: 'success', texto: 'Requerimientos diarios: Na 3-4 mEq/kg/d, K 2-3 mEq/kg/d, Cl 3-4 mEq/kg/d, Ca 50-100 mg/kg/d, Mg 0,4-0,9 mEq/kg/d y P 15-50 mg/kg/d.' },
-        { tipo: 'success', texto: 'NaCl 10% aporta 1,71 mEq/ml. KCl 10% y Yonka aportan 1,34 mEq/ml. PMK 15% aporta 1,1 mEq/ml.' }
+        { tipo: 'success', texto: 'NaCl 10% aporta 1,71 mEq/ml. KCl 10% y Yonka aportan 1,34 mEq/ml. PMK 15% aporta 1,1 mEq/ml. Sulfato de magnesio 25%: bolo 0,1-0,2 ml/kg (máx. 5 cc). Gluconato de calcio 10%: 8,94 mg/cc; bolo 0,5-1 ml/kg (máx. 20 cc).' }
       ];
       if (condiciones.includes("hiponatremia")) notas.push({ tipo: 'warning', texto: 'Hiponatremia: bolo NaCl 10% 1 ml/kg si Na < 120, según evaluación médica.' });
-      if (condiciones.includes("acidosisSevera")) notas.push({ tipo: 'warning', texto: 'Bicarbonato 2/3 M aporta 0,66 mEq/ml; 13 ml de NaHCO₃ 8,4% equivalen aproximadamente a 20 ml de 2/3 M.' });
+      if (condiciones.includes("acidosisSevera")) notas.push({ tipo: 'warning', texto: 'Bicarbonato 2/3 M aporta 0,66 mEq/ml; 13 ml de NaHCO₃ 8,4% equivalen aproximadamente a 20 ml de 2/3 M. Ampolla NaHCO₃ 8,4% 10 ml = 10 mEq de Na.' });
       if (edadMeses <= 3 && categoria === "mantenimiento") notas.push({ tipo: 'success', texto: 'Paciente ≤ 3 meses sin pérdidas patológicas: se prioriza mezcla Sodio 35.' });
       notas.forEach(nota => {
         const noteDiv = document.createElement("div");

@@ -1,5 +1,5 @@
 /* service-worker.js – PediCalc PWA */
-const CACHE_NAME = 'hydration-cache-v2';
+const CACHE_NAME = 'hydration-cache-v3';
 
 const ASSETS = [
   './',
