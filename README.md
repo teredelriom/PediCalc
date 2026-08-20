@@ -29,7 +29,7 @@ Esta aplicación web permite calcular de manera precisa los requerimientos de hi
 
 ## 🧪 Instrucciones de uso:
 1- Abrir index.html en un navegador moderno (preferentemente Chrome o Firefox).
-2- Ingresar peso (en gramos) y edad (en años).
+2- Ingresar peso (en gramos) y edad (en meses).
 3- Seleccionar grado de deshidratación y condiciones clínicas presentes.
 4- (Opcional) Ingresar electrolitos basales para mayor precisión.
 5- Presionar "Calcular Hidratación".
@@ -43,10 +43,10 @@ Esta aplicación web permite calcular de manera precisa los requerimientos de hi
 
 ## 👩‍⚕️ Uso Clínico
 
-Esta herramienta está orientada al **uso médico profesional**. Las fórmulas aplicadas siguen los principios de Holliday-Segar y estándares de manejo hidroelectrolítico pediátrico.
+Esta herramienta está orientada al **uso médico profesional**. Las fórmulas aplicadas siguen los principios de aportes por peso/superficie corporal y estándares de manejo hidroelectrolítico pediátrico.
 - El código está optimizado para uso clínico, pero no reemplaza el juicio médico.
 - Las advertencias clínicas se generan automáticamente si hay desviaciones significativas en sodio o condiciones críticas presentes.
-- Todos los cálculos están basados en la fórmula de Holliday-Segar y guías clínicas pediátricas actualizadas.
+- Todos los cálculos están basados en la tabla de aportes por kg/superficie corporal y guías clínicas pediátricas actualizadas.
 
 ## 📄 Licencia
 

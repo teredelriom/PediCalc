@@ -370,8 +370,8 @@
         <div>
           <label class="block text-sm font-medium text-[#3FB8AF] mb-1">Edad</label>
           <div class="input-with-unit">
-            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 2" step="0.1" min="0">
-            <span class="unit">años</span>
+            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 6" step="1" min="0">
+            <span class="unit">meses</span>
           </div>
           <p id="edad-error" class="text-red-500 text-xs mt-1 hidden"></p>
         </div>
@@ -402,6 +402,14 @@
           <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:border-[#3FB8AF]">
             <input type="checkbox" id="vm" name="condiciones" value="vm" class="h-4 w-4 text-[#3FB8AF] focus:ring-[#3FB8AF] border-gray-300 rounded">
             <span class="ml-2 text-sm text-gray-700">Ventilación mecánica</span>
+          </label>
+          <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:border-[#3FB8AF]">
+            <input type="checkbox" id="perdidasPatologicas" name="condiciones" value="perdidasPatologicas" class="h-4 w-4 text-[#3FB8AF] focus:ring-[#3FB8AF] border-gray-300 rounded">
+            <span class="ml-2 text-sm text-gray-700">Pérdidas patológicas</span>
+          </label>
+          <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:border-[#3FB8AF]">
+            <input type="checkbox" id="acidosisSevera" name="condiciones" value="acidosisSevera" class="h-4 w-4 text-[#3FB8AF] focus:ring-[#3FB8AF] border-gray-300 rounded">
+            <span class="ml-2 text-sm text-gray-700">Acidosis metabólica severa (HCO₃ < 15)</span>
           </label>
           <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:border-[#3FB8AF]">
             <input type="checkbox" id="hipernatremia" name="condiciones" value="hipernatremia" class="h-4 w-4 text-[#3FB8AF] focus:ring-[#3FB8AF] border-gray-300 rounded">
@@ -551,10 +559,10 @@
         </div>
       </div>
 
-      <!-- Fórmula Holliday-Segar -->
+      <!-- Fórmulas de aportes -->
       <div class="bg-[#DAD8A7]/10 rounded-lg p-6 border border-[#DAD8A7]">
         <h3 class="text-lg font-bold text-[#3FB8AF] mb-3">
-          <i class="fas fa-info-circle mr-2 text-[#FF3D7F]"></i>Fórmula Holliday-Segar
+          <i class="fas fa-info-circle mr-2 text-[#FF3D7F]"></i>Fórmulas de aportes
         </h3>
         <div id="hollidayOriginal" class="text-sm">
           <!-- Contenido generado dinámicamente -->
@@ -591,7 +599,7 @@
   <script>
     // Constants for validation
     const MAX_WEIGHT = 50000; // 50kg in grams
-    const MAX_AGE = 18; // Maximum age in years
+    const MAX_AGE_MONTHS = 216; // 18 años expresados en meses
     const MIN_TEMP = 35;
     const MAX_TEMP = 42;
     const MIN_AMBIENT_TEMP = 20;
@@ -664,8 +672,8 @@
       if (age && (isNaN(age) || age < 0)) {
         return { valid: false, message: "Por favor ingrese una edad válida" };
       }
-      if (age > MAX_AGE) {
-        return { valid: false, message: `La edad máxima es ${MAX_AGE} años` };
+      if (age > MAX_AGE_MONTHS) {
+        return { valid: false, message: `La edad máxima es 216 meses (18 años)` };
       }
       return { valid: true };
     }
@@ -742,6 +750,8 @@
       { id: "fiebre", label: "Fiebre (>37.5°C)" },
       { id: "ambienteCalido", label: "Ambiente caluroso (>31°C)" },
       { id: "vm", label: "Ventilación mecánica" },
+      { id: "perdidasPatologicas", label: "Pérdidas patológicas" },
+      { id: "acidosisSevera", label: "Acidosis metabólica severa (HCO₃ < 15)" },
       { id: "hipernatremia", label: "Hipernatremia" },
       { id: "hiponatremia", label: "Hiponatremia" },
       { id: "edema", label: "Edema" },
@@ -751,360 +761,225 @@
       { id: "hipoglicemia", label: "Hipoglicemia" }
     ];
 
+    const APORTE_RANGOS = {
+      mantenimiento: { kg: [100, 150], m2: [2000, 2500], label: "Volumen mantención" },
+      patologicas: { kg: [180, 180], m2: [2800, 2800], label: "Pérdidas patológicas" },
+      leve: { kg: [200, 220], m2: [3000, 3200], label: "Deshidratación leve" },
+      moderada: { kg: [220, 240], m2: [3200, 3500], label: "Deshidratación moderada" },
+      severa: { kg: [250, 270], m2: [3500, 4000], label: "Deshidratación severa" }
+    };
+
+    const PREPARACIONES = {
+      sodio35: {
+        nombre: "Sodio 35",
+        indicacion: "Sin pérdidas patológicas",
+        componentes: ["S. Glucosado 5% 500 cc", "NaCl 10% 10 cc", "KCl 10% 7,5 cc"],
+        naPorLitro: 35,
+        incluyeK: true
+      },
+      sodio70: {
+        nombre: "Sodio 70",
+        indicacion: "Con pérdidas patológicas o niños > 3 meses",
+        componentes: ["S. Glucosado 5% 500 cc", "NaCl 10% 20 cc", "KCl 10% 7,5 cc"],
+        naPorLitro: 70,
+        incluyeK: true
+      },
+      sodio70Alcalinizante: {
+        nombre: "Sodio 70 alcalinizante",
+        indicacion: "Deshidratación con acidosis metabólica severa (HCO₃ < 15)",
+        componentes: ["S. Glucosado 5% 500 cc", "NaCl 10% 10 cc", "NaHCO₃ 2/3 M 26 cc (o NaHCO₃ 8,4% 17 ml)", "KCl 10% 7,5 cc"],
+        naPorLitro: 70,
+        incluyeK: true
+      },
+      sinKcl: {
+        nombre: "Mezcla sin KCl",
+        indicacion: "Deshidratación severa / anuria",
+        componentes: ["Usar la mezcla indicada sin agregado de KCl hasta confirmar diuresis"],
+        naPorLitro: 70,
+        incluyeK: false
+      },
+      sodio105: {
+        nombre: "Sodio 105",
+        indicacion: "Hiponatremia",
+        componentes: ["S. Glucosado 5% 500 cc", "NaCl 10% 30 cc", "KCl 10% 7,5 cc"],
+        naPorLitro: 105,
+        incluyeK: true
+      }
+    };
+
+    function promedio(rango) {
+      return (rango[0] + rango[1]) / 2;
+    }
+
+    function calcularSuperficieCorporal(pesoKg) {
+      return ((pesoKg * 4) + 7) / (90 + pesoKg);
+    }
+
+    function obtenerCategoriaAporte(deficitPct, condiciones) {
+      if (deficitPct >= 100) return "severa";
+      if (deficitPct >= 75) return "moderada";
+      if (deficitPct >= 50) return "leve";
+      if (condiciones.includes("perdidasPatologicas")) return "patologicas";
+      return "mantenimiento";
+    }
+
+    function calcularAporteDiario(pesoKg, categoria) {
+      const rango = APORTE_RANGOS[categoria];
+      const usaPeso = pesoKg >= 3 && pesoKg <= 8;
+      const superficieCorporal = calcularSuperficieCorporal(pesoKg);
+      const unidad = usaPeso ? "cc/kg/día" : "cc/m²/día";
+      const factor = promedio(usaPeso ? rango.kg : rango.m2);
+      const total = usaPeso ? pesoKg * factor : superficieCorporal * factor;
+      return { total, rango: usaPeso ? rango.kg : rango.m2, unidad, factor, usaPeso, superficieCorporal, label: rango.label };
+    }
+
+    function seleccionarPreparacion(condiciones, edadMeses, categoria) {
+      if (condiciones.includes("hiponatremia")) return PREPARACIONES.sodio105;
+      if (categoria === "severa" || condiciones.includes("oliguria")) return PREPARACIONES.sinKcl;
+      if (condiciones.includes("acidosisSevera")) return PREPARACIONES.sodio70Alcalinizante;
+      if (condiciones.includes("perdidasPatologicas") || edadMeses > 3) return PREPARACIONES.sodio70;
+      return PREPARACIONES.sodio35;
+    }
+
     // Enhanced calcular function with better validation
     function calcular() {
-      // Clear previous errors
       ['peso', 'edad', 'tempF', 'tempA'].forEach(id => clearError(id));
-      
-      // Validate inputs
       const peso = parseFloat(document.getElementById("peso").value);
       const pesoValidation = validateWeight(peso);
-      if (!pesoValidation.valid) {
-        showError("peso", pesoValidation.message);
-        return;
-      }
+      if (!pesoValidation.valid) { showError("peso", pesoValidation.message); return; }
 
       const edad = parseFloat(document.getElementById("edad").value) || 0;
       const edadValidation = validateAge(edad);
-      if (!edadValidation.valid) {
-        showError("edad", edadValidation.message);
-        return;
-      }
+      if (!edadValidation.valid) { showError("edad", edadValidation.message); return; }
 
-      // Validate temperatures if visible
       if (!document.getElementById("tempFiebre").classList.contains("hidden")) {
-        const tempF = parseFloat(document.getElementById("tempF").value);
-        const tempFValidation = validateTemperature(tempF);
-        if (!tempFValidation.valid) {
-          showError("tempF", tempFValidation.message);
-          return;
-        }
+        const tempFValidation = validateTemperature(parseFloat(document.getElementById("tempF").value));
+        if (!tempFValidation.valid) { showError("tempF", tempFValidation.message); return; }
       }
-
       if (!document.getElementById("tempAmbiente").classList.contains("hidden")) {
-        const tempA = parseFloat(document.getElementById("tempA").value);
-        const tempAValidation = validateTemperature(tempA, false);
-        if (!tempAValidation.valid) {
-          showError("tempA", tempAValidation.message);
-          return;
-        }
+        const tempAValidation = validateTemperature(parseFloat(document.getElementById("tempA").value), false);
+        if (!tempAValidation.valid) { showError("tempA", tempAValidation.message); return; }
       }
 
-      // Calcular requerimientos básicos
       const pesoKg = peso / 1000;
       const deficitPct = parseFloat(document.getElementById("deshidratacion").value);
-      
-      let mantenimiento = calcularMantenimiento(pesoKg);
-      const deficit = pesoKg * deficitPct;
-      const total24h = mantenimiento + deficit;
-      
-      // Actualizar UI
+      const condiciones = obtenerCondicionesSeleccionadas();
+      const categoria = obtenerCategoriaAporte(deficitPct, condiciones);
+      const aporte = calcularAporteDiario(pesoKg, categoria);
+      const total24h = aporte.total;
+      const mantenimiento = calcularAporteDiario(pesoKg, "mantenimiento").total;
+      const deficit = Math.max(total24h - mantenimiento, 0);
+      const preparacion = seleccionarPreparacion(condiciones, edad, categoria);
+
       document.getElementById("mantenimientoResult").textContent = Math.round(mantenimiento);
       document.getElementById("deficitResult").textContent = Math.round(deficit);
       document.getElementById("total24hResult").textContent = Math.round(total24h);
       document.getElementById("flujoHorarioResult").textContent = (total24h / 24).toFixed(1);
-      
-      // Calcular electrolitos
-      const calorias = mantenimiento;
-      const glucosaReq = calorias * 0.05;
-      let sodioReq = calorias * 0.03;
-      let potasioReq = calorias * 0.025;
-      
-      // Ajustar según condiciones
-      const condiciones = obtenerCondicionesSeleccionadas();
-      if (condiciones.includes("hipernatremia")) sodioReq *= 0.5;
-      if (condiciones.includes("hiponatremia")) sodioReq *= 1.5;
-      if (condiciones.includes("edema") || condiciones.includes("oliguria")) potasioReq *= 0.5;
-      
-      // Calcular solución recomendada
-      const { solucionOptima, solucionesAlternativas } = calcularSolucionRecomendada(
-        mantenimiento, 
-        sodioReq, 
-        potasioReq, 
-        glucosaReq,
-        condiciones,
-        edad
-      );
-      
-      // Mostrar fórmula Holliday-Segar
-      mostrarFormulaHollidaySegar(pesoKg, mantenimiento, sodioReq, potasioReq, glucosaReq);
-      
-      // Mostrar notas clínicas
-      mostrarNotasClinicas(solucionOptima, condiciones, edad);
-      
-      // Mostrar soluciones alternativas si existen
-      if (solucionesAlternativas.length > 0) {
-        mostrarSolucionesAlternativas(solucionesAlternativas, potasioReq);
-        document.getElementById("solucionesAlternativas").classList.remove("hidden");
-      }
-      
-      // Mostrar resultados
+
+      const electrolitos = calcularRequerimientosElectrolitos(pesoKg);
+      const solucionOptima = calcularSolucionRecomendada(total24h, preparacion, condiciones);
+      mostrarFormulaHollidaySegar(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
+      mostrarNotasClinicas(solucionOptima, condiciones, edad, categoria);
+      document.getElementById("solucionesAlternativas").classList.add("hidden");
       document.getElementById("resultado").classList.remove("hidden");
     }
 
-    // Función mejorada para calcular solución recomendada
-    function calcularSolucionRecomendada(mantenimiento, sodioReq, potasioReq, glucosaReq, condiciones, edad) {
-      const solucionesBase = [
-        { 
-          nombre: "SG 5% + NaCl 0.2%",
-          descripcion: "Solución glucosada al 5% con NaCl 0.2%",
-          sgPorcentaje: 5,
-          naPorLitro: 34,
-          glucosaPorLitro: 50,
-          caloriasPorLitro: 200,
-          tipo: "bajaNa"
-        },
-        { 
-          nombre: "SG 5% + NaCl 0.45%",
-          descripcion: "Solución glucosada al 5% con NaCl 0.45%",
-          sgPorcentaje: 5,
-          naPorLitro: 77,
-          glucosaPorLitro: 50,
-          caloriasPorLitro: 200,
-          tipo: "normal"
-        },
-        { 
-          nombre: "SG 10% + NaCl 0.2%",
-          descripcion: "Solución glucosada al 10% con NaCl 0.2%",
-          sgPorcentaje: 10,
-          naPorLitro: 34,
-          glucosaPorLitro: 100,
-          caloriasPorLitro: 400,
-          tipo: "bajaNa"
-        },
-        { 
-          nombre: "SG 10% + NaCl 0.3%",
-          descripcion: "Solución glucosada al 10% con NaCl 0.3%",
-          sgPorcentaje: 10,
-          naPorLitro: 51,
-          glucosaPorLitro: 100,
-          caloriasPorLitro: 400,
-          tipo: "normal"
-        }
-      ];
-      
-      // Evaluar cada solución
-      const opciones = solucionesBase.map(sol => {
-        const volumen = Math.min(mantenimiento, (glucosaReq * 1000) / sol.glucosaPorLitro);
-        const sodioTotal = (sol.naPorLitro * volumen) / 1000;
-        const diferenciaSodio = sodioTotal - sodioReq;
-        
-        return {
-          ...sol,
-          volumen: Math.round(volumen),
-          sodioTotal: parseFloat(sodioTotal.toFixed(1)),
-          diferenciaSodio: parseFloat(diferenciaSodio.toFixed(1)),
-          adecuacion: Math.abs(diferenciaSodio)
-        };
+    function calcularSolucionRecomendada(total24h, preparacion, condiciones) {
+      const factor = total24h / 500;
+      const componentesEscalados = preparacion.componentes.map(item => {
+        const match = item.match(/^(.*?)(\d+(?:[,.]\d+)?)\s*(cc|ml)/i);
+        if (!match) return item;
+        const valor = parseFloat(match[2].replace(',', '.')) * factor;
+        return `${match[1]}${valor.toFixed(1).replace('.', ',')} ${match[3]}`;
       });
-      
-      // Seleccionar mejor opción según condiciones
-      let mejorOpcion = opciones[0];
-      let solucionesAlternativas = [];
-      
-      if (condiciones.includes("hipernatremia")) {
-        mejorOpcion = opciones.reduce((prev, curr) => 
-          (curr.diferenciaSodio < prev.diferenciaSodio) ? curr : prev);
-        
-        // Agregar alternativas con bajo sodio
-        solucionesAlternativas = opciones
-          .filter(sol => sol.tipo === "bajaNa" && sol.nombre !== mejorOpcion.nombre)
-          .slice(0, 2);
-      } 
-      else if (condiciones.includes("hiponatremia")) {
-        mejorOpcion = opciones.reduce((prev, curr) => 
-          (curr.sodioTotal > prev.sodioTotal) ? curr : prev);
-          
-        // Agregar alternativas con mayor sodio
-        solucionesAlternativas = opciones
-          .filter(sol => sol.tipo === "normal" && sol.nombre !== mejorOpcion.nombre)
-          .slice(0, 2);
-      } 
-      else {
-        // Para pacientes normales, priorizar SG 10% en menores de 1 año
-        if (edad < 1) {
-          mejorOpcion = opciones.find(sol => sol.sgPorcentaje === 10 && sol.tipo === "normal") || 
-                       opciones.reduce((prev, curr) => (curr.adecuacion < prev.adecuacion) ? curr : prev);
-        } else {
-          mejorOpcion = opciones.reduce((prev, curr) => 
-            (curr.adecuacion < prev.adecuacion) ? curr : prev);
-        }
-        
-        // Agregar alternativas con similar adecuación
-        solucionesAlternativas = opciones
-          .filter(sol => sol.nombre !== mejorOpcion.nombre && sol.adecuacion <= 5)
-          .slice(0, 2);
-      }
-      
-      // Calcular KCl necesario
-      const kclMl = Math.round((potasioReq / 1.34) * 10) / 10;
-      
-      // Mostrar en UI
-      mostrarSolucionRecomendada(mejorOpcion, kclMl, potasioReq, condiciones);
-      
-      return { solucionOptima: mejorOpcion, solucionesAlternativas };
+      const solucion = {
+        ...preparacion,
+        volumen: Math.round(total24h),
+        componentesEscalados,
+        sodioTotal: (preparacion.naPorLitro * total24h / 1000).toFixed(1),
+        potasioTotal: preparacion.incluyeK ? (20.1 * factor).toFixed(1) : "0"
+      };
+      mostrarSolucionRecomendada(solucion, condiciones);
+      return solucion;
     }
 
-    // Función para mostrar la solución recomendada en la UI
-    function mostrarSolucionRecomendada(solucion, kclMl, potasioReq, condiciones) {
+    function mostrarSolucionRecomendada(solucion, condiciones) {
       const container = document.getElementById("solucionRecomendadaDetalle");
-      
-      let notasClinicas = "";
-      if (Math.abs(solucion.diferenciaSodio) > 5) {
-        const esExceso = solucion.diferenciaSodio > 0;
-        notasClinicas = `
-          <div class="mt-4 p-3 rounded-md clinical-note ${esExceso ? 'warning' : 'success'}">
-            <p class="font-semibold ${esExceso ? 'text-[#FF3D7F]' : 'text-[#3FB8AF]'}">
-              <i class="fas fa-exclamation-triangle mr-1 ${esExceso ? 'text-[#FF3D7F]' : 'text-[#3FB8AF]'}"></i>
-              Nota Clínica Importante
-            </p>
-            <p class="mt-1 text-sm">
-              Esta solución ${esExceso ? 'aporta' : 'proporciona'} ${Math.abs(solucion.diferenciaSodio).toFixed(1)} mEq 
-              ${esExceso ? 'más' : 'menos'} de sodio que lo requerido.
-            </p>
-            ${condiciones.includes(esExceso ? 'hipernatremia' : 'hiponatremia') ? `
-              <p class="mt-1 text-sm font-medium ${esExceso ? 'text-[#FF3D7F]' : 'text-[#3FB8AF]'}">
-                <i class="fas fa-info-circle mr-1"></i>
-                ${esExceso ? 'Considerar solución con menos sodio para hipernatremia' : 'Considerar solución con más sodio para hiponatremia'}
-              </p>
-            ` : ''}
-          </div>
-        `;
-      }
-      
       container.innerHTML = `
         <div class="solution-card selected p-4 mb-4">
-          <h4 class="text-lg font-bold text-[#3FB8AF] mb-2">${solucion.nombre} + KCl</h4>
-          <p class="text-gray-600 text-sm mb-3">${solucion.descripcion}</p>
-          
+          <h4 class="text-lg font-bold text-[#3FB8AF] mb-2">${solucion.nombre}</h4>
+          <p class="text-gray-600 text-sm mb-3"><span class="font-medium">Indicación:</span> ${solucion.indicacion}</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p class="font-semibold text-sm text-[#3FB8AF] mb-1">Composición:</p>
-              <ul class="text-sm space-y-1">
-                <li><span class="font-medium">Volumen total:</span> ${solucion.volumen} mL</li>
-                <li><span class="font-medium">SG ${solucion.sgPorcentaje}%:</span> ${solucion.volumen} mL</li>
-                <li><span class="font-medium">NaCl:</span> ${solucion.nombre.split('+')[1].trim()}</li>
-                <li><span class="font-medium">KCl 10%:</span> ${kclMl} mL (${potasioReq.toFixed(1)} mEq)</li>
-              </ul>
+              <p class="font-semibold text-sm text-[#3FB8AF] mb-1">Preparación para ${solucion.volumen} mL/24h:</p>
+              <ul class="text-sm space-y-1 list-disc pl-5">${solucion.componentesEscalados.map(c => `<li>${c}</li>`).join('')}</ul>
             </div>
-            
             <div>
-              <p class="font-semibold text-sm text-[#3FB8AF] mb-1">Aporte nutricional:</p>
+              <p class="font-semibold text-sm text-[#3FB8AF] mb-1">Aporte estimado:</p>
               <ul class="text-sm space-y-1">
-                <li><span class="font-medium">Glucosa:</span> ${((solucion.glucosaPorLitro * solucion.volumen)/1000).toFixed(1)} g</li>
-                <li><span class="font-medium">Sodio:</span> ${solucion.sodioTotal} mEq</li>
-                <li><span class="font-medium">Potasio:</span> ${potasioReq.toFixed(1)} mEq</li>
-                <li><span class="font-medium">Calorías:</span> ${((solucion.caloriasPorLitro * solucion.volumen)/1000).toFixed(0)} kcal</li>
+                <li><span class="font-medium">Sodio:</span> ${solucion.sodioTotal} mEq/24h (${solucion.naPorLitro} mEq/L)</li>
+                <li><span class="font-medium">Potasio:</span> ${solucion.potasioTotal} mEq/24h</li>
+                <li><span class="font-medium">Velocidad:</span> ${(solucion.volumen / 24).toFixed(1)} mL/h</li>
               </ul>
             </div>
           </div>
-          
-          <div class="mt-4 bg-[#DAD8A7]/10 p-3 rounded border border-[#DAD8A7]">
-            <p class="font-semibold text-sm text-[#3FB8AF] mb-2">Instrucciones de preparación:</p>
-            <ol class="text-sm space-y-1 pl-2">
-              <li>1. Tomar ${solucion.volumen} mL de ${solucion.nombre}</li>
-              <li>2. Añadir ${kclMl} mL de KCl 10% (${potasioReq.toFixed(1)} mEq de K)</li>
-              <li>3. Mezclar adecuadamente antes de administrar</li>
-            </ol>
-            <p class="mt-2 text-sm font-medium">
-              <span class="text-[#FF3D7F]">Velocidad de infusión:</span> ${(solucion.volumen / 24).toFixed(1)} mL/h
-            </p>
-          </div>
-          
-          ${notasClinicas}
-        </div>
-      `;
+          ${!solucion.incluyeK ? `<div class="mt-4 p-3 rounded-md clinical-note warning"><p class="font-semibold text-[#FF3D7F]"><i class="fas fa-exclamation-triangle mr-1"></i>Sin KCl</p><p class="mt-1 text-sm">No agregar potasio en deshidratación severa, anuria u oliguria hasta confirmar diuresis y potasio sérico.</p></div>` : ''}
+        </div>`;
     }
 
-    // Mostrar soluciones alternativas
-    function mostrarSolucionesAlternativas(soluciones, potasioReq) {
-      const container = document.getElementById("solucionesAlternativasDetalle");
-      container.innerHTML = "";
-      
-      soluciones.forEach(sol => {
-        const kclMl = Math.round((potasioReq / 1.34) * 10) / 10;
-        
-        const card = document.createElement("div");
-        card.className = "solution-card p-4 border border-gray-200 rounded-lg";
-        card.innerHTML = `
-          <h4 class="text-md font-bold text-[#3FB8AF] mb-1">${sol.nombre} + KCl</h4>
-          <p class="text-gray-600 text-xs mb-2">${sol.descripcion}</p>
-          
-          <div class="text-sm space-y-1">
-            <p><span class="font-medium">Volumen:</span> ${sol.volumen} mL</p>
-            <p><span class="font-medium">Sodio:</span> ${sol.sodioTotal} mEq</p>
-            <p><span class="font-medium">KCl 10%:</span> ${kclMl} mL</p>
-            <p><span class="font-medium">Glucosa:</span> ${((sol.glucosaPorLitro * sol.volumen)/1000).toFixed(1)} g</p>
-          </div>
-          
-          <div class="mt-2 text-xs text-gray-500">
-            <p><span class="font-medium">Diferencia Na:</span> ${sol.diferenciaSodio > 0 ? '+' : ''}${sol.diferenciaSodio} mEq</p>
-          </div>
-        `;
-        
-        container.appendChild(card);
-      });
+    function mostrarSolucionesAlternativas() {}
+
+    function calcularRequerimientosElectrolitos(pesoKg) {
+      return {
+        na: [3 * pesoKg, 4 * pesoKg],
+        k: [2 * pesoKg, 3 * pesoKg],
+        cl: [3 * pesoKg, 4 * pesoKg],
+        ca: [50 * pesoKg, 100 * pesoKg],
+        mg: [0.4 * pesoKg, 0.9 * pesoKg],
+        p: [15 * pesoKg, 50 * pesoKg]
+      };
     }
 
-    // Mostrar notas clínicas
-    function mostrarNotasClinicas(solucion, condiciones, edad) {
+    function mostrarNotasClinicas(solucion, condiciones, edadMeses, categoria) {
       const container = document.getElementById("notasClinicas");
       container.innerHTML = "";
       container.classList.remove("hidden");
-      
-      let notas = [];
-      
-      // Nota sobre sodio
-      if (Math.abs(solucion.diferenciaSodio) > 5) {
-        const esExceso = solucion.diferenciaSodio > 0;
-        notas.push({
-          tipo: esExceso ? 'warning' : 'success',
-          texto: `Esta solución ${esExceso ? 'aporta' : 'proporciona'} ${Math.abs(solucion.diferenciaSodio).toFixed(1)} mEq ${esExceso ? 'más' : 'menos'} de sodio que lo requerido.`
-        });
-      }
-      
-      // Notas específicas por condición
-      if (condiciones.includes("hipernatremia")) {
-        notas.push({
-          tipo: 'warning',
-          texto: 'Paciente con hipernatremia. Corregir natremia lentamente (< 0.5 mEq/L/hora).'
-        });
-      }
-      
-      if (condiciones.includes("hiponatremia")) {
-        notas.push({
-          tipo: 'warning',
-          texto: 'Paciente con hiponatremia. Corregir natremia lentamente (0.5-1 mEq/L/hora).'
-        });
-      }
-      
-      if (condiciones.includes("oliguria")) {
-        notas.push({
-          tipo: 'warning',
-          texto: 'Paciente con oliguria/IRA. Monitorizar balance hídrico estricto.'
-        });
-      }
-      
-      if (edad < 1) {
-        notas.push({
-          tipo: 'success',
-          texto: 'Paciente menor de 1 año - requerimientos de glucosa más altos.'
-        });
-      }
-      
-      // Mostrar notas en UI
+      const notas = [
+        { tipo: 'success', texto: 'Requerimientos diarios: Na 3-4 mEq/kg/d, K 2-3 mEq/kg/d, Cl 3-4 mEq/kg/d, Ca 50-100 mg/kg/d, Mg 0,4-0,9 mEq/kg/d y P 15-50 mg/kg/d.' },
+        { tipo: 'success', texto: 'NaCl 10% aporta 1,71 mEq/ml. KCl 10% y Yonka aportan 1,34 mEq/ml. PMK 15% aporta 1,1 mEq/ml.' }
+      ];
+      if (condiciones.includes("hiponatremia")) notas.push({ tipo: 'warning', texto: 'Hiponatremia: bolo NaCl 10% 1 ml/kg si Na < 120, según evaluación médica.' });
+      if (condiciones.includes("acidosisSevera")) notas.push({ tipo: 'warning', texto: 'Bicarbonato 2/3 M aporta 0,66 mEq/ml; 13 ml de NaHCO₃ 8,4% equivalen aproximadamente a 20 ml de 2/3 M.' });
+      if (edadMeses <= 3 && categoria === "mantenimiento") notas.push({ tipo: 'success', texto: 'Paciente ≤ 3 meses sin pérdidas patológicas: se prioriza mezcla Sodio 35.' });
       notas.forEach(nota => {
         const noteDiv = document.createElement("div");
         noteDiv.className = `clinical-note ${nota.tipo} p-3 rounded-md`;
-        noteDiv.innerHTML = `
-          <p class="font-semibold ${nota.tipo === 'warning' ? 'text-[#FF3D7F]' : 'text-[#3FB8AF]'}">
-            <i class="fas fa-info-circle mr-1"></i>
-            Nota Clínica
-          </p>
-          <p class="mt-1 text-sm">${nota.texto}</p>
-        `;
+        noteDiv.innerHTML = `<p class="font-semibold ${nota.tipo === 'warning' ? 'text-[#FF3D7F]' : 'text-[#3FB8AF]'}"><i class="fas fa-info-circle mr-1"></i>Nota Clínica</p><p class="mt-1 text-sm">${nota.texto}</p>`;
         container.appendChild(noteDiv);
       });
+    }
+
+    function mostrarFormulaHollidaySegar(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos) {
+      const container = document.getElementById("hollidayOriginal");
+      const rangoTexto = aporte.rango[0] === aporte.rango[1] ? aporte.rango[0] : `${aporte.rango[0]}-${aporte.rango[1]}`;
+      const base = aporte.usaPeso
+        ? `${pesoKg.toFixed(2)} kg × ${aporte.factor} ${aporte.unidad}`
+        : `${aporte.superficieCorporal.toFixed(3)} m² × ${aporte.factor} ${aporte.unidad}`;
+      container.innerHTML = `
+        <p class="font-medium mb-2">Cálculo de aportes (${aporte.label}):</p>
+        <p class="text-sm bg-white p-2 rounded border border-[#DAD8A7] mb-4">${base} = ${Math.round(total24h)} mL/día. Rango usado: ${rangoTexto} ${aporte.unidad}.</p>
+        ${!aporte.usaPeso ? `<p class="text-sm bg-white p-2 rounded border border-[#DAD8A7] mb-4">Superficie corporal = (peso × 4 + 7) / (90 + peso) = ${aporte.superficieCorporal.toFixed(3)} m².</p>` : ''}
+        <p class="font-medium mb-2">Requerimientos diarios de electrolitos:</p>
+        <ul class="text-sm space-y-1 list-disc pl-5">
+          <li>Líquidos de mantención: ${Math.round(mantenimiento)} mL/24h</li>
+          <li>Adicional por pérdidas/deshidratación: ${Math.round(deficit)} mL/24h</li>
+          <li>Sodio: ${electrolitos.na[0].toFixed(1)}-${electrolitos.na[1].toFixed(1)} mEq/d</li>
+          <li>Potasio: ${electrolitos.k[0].toFixed(1)}-${electrolitos.k[1].toFixed(1)} mEq/d</li>
+          <li>Cloro: ${electrolitos.cl[0].toFixed(1)}-${electrolitos.cl[1].toFixed(1)} mEq/d</li>
+          <li>Calcio: ${electrolitos.ca[0].toFixed(0)}-${electrolitos.ca[1].toFixed(0)} mg/d</li>
+          <li>Magnesio: ${electrolitos.mg[0].toFixed(1)}-${electrolitos.mg[1].toFixed(1)} mEq/d</li>
+          <li>Fósforo: ${electrolitos.p[0].toFixed(0)}-${electrolitos.p[1].toFixed(0)} mg/d</li>
+        </ul>`;
     }
 
     // Función para copiar indicaciones al portapapeles
@@ -1125,13 +1000,13 @@
       const solucionNombre = solucionElem.querySelector("h4").textContent;
       const composicion = Array.from(solucionElem.querySelectorAll("ul:first-of-type li")).map(li => li.textContent).join('\n   • ');
       const instrucciones = Array.from(solucionElem.querySelectorAll("ol li")).map(li => li.textContent).join('\n   • ');
-      const velocidad = solucionElem.querySelector("p:nth-last-of-type(2)").textContent;
+      const velocidad = `Velocidad de infusión: ${document.getElementById("flujoHorarioResult").textContent} mL/h`;
       
       // Construir texto para copiar
       const textoACopiar = `INDICACIÓN DE HIDRATACIÓN PARENTERAL - PEDIATRÍA\n\n` +
                          `DATOS DEL PACIENTE\n` +
                          `• Peso: ${peso.toFixed(3)} kg\n` +
-                         `• Edad: ${edad} años\n` +
+                         `• Edad: ${edad} meses\n` +
                          `• Condiciones relevantes: ${condiciones}\n\n` +
                          
                          `REQUERIMIENTOS CALCULADOS\n` +
@@ -1199,7 +1074,7 @@
              .map(cb => cb.value);
     }
 
-    function mostrarFormulaHollidaySegar(pesoKg, mantenimiento, sodioReq, potasioReq, glucosaReq) {
+    function mostrarFormulaHollidaySegarLegacy(pesoKg, mantenimiento, sodioReq, potasioReq, glucosaReq) {
       const container = document.getElementById("hollidayOriginal");
       
       let formula = "";
