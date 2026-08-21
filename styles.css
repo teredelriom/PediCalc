@@ -1,0 +1,362 @@
+:root {
+  --color-primary: #3FB8AF;
+  --color-primary-light: #7FC7AF;
+  --color-primary-dark: #2E8B84;
+  --color-secondary: #DAD8A7;
+  --color-accent: #FF9E9D;
+  --color-danger: #FF3D7F;
+  --color-success: #7FC7AF;
+  --color-warning: #FF9E9D;
+  --color-light: #f8f9fa;
+  --color-dark: #212529;
+  --color-gray: #6c757d;
+  --color-gray-light: #e9ecef;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  min-height: 100vh;
+  line-height: 1.6;
+  color: var(--color-dark);
+}
+
+.solution-card {
+  transition: all 0.3s ease;
+  border-left: 4px solid transparent;
+}
+
+.solution-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.solution-card.selected {
+  border-left-color: var(--color-danger);
+  background-color: rgba(255, 158, 157, 0.1);
+}
+
+.input-highlight {
+  transition: all 0.3s ease;
+}
+
+.input-highlight:focus {
+  box-shadow: 0 0 0 3px rgba(63, 184, 175, 0.2);
+  border-color: var(--color-primary);
+}
+
+.btn-primary {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #e83572;
+}
+
+.btn-secondary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-tertiary {
+  background-color: var(--color-primary-light);
+  color: white;
+}
+
+.btn-tertiary:hover {
+  background-color: #6fb39b;
+}
+
+.clinical-note {
+  border-left: 4px solid var(--color-warning);
+  background-color: rgba(255, 158, 157, 0.1);
+}
+
+.clinical-note.warning {
+  border-left-color: var(--color-danger);
+  background-color: rgba(255, 61, 127, 0.1);
+}
+
+.clinical-note.success {
+  border-left-color: var(--color-success);
+  background-color: rgba(127, 199, 175, 0.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+h1, h2, h3, h4 {
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 28px;
+  position: relative;
+  padding-bottom: 15px;
+}
+
+h1:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
+
+.result-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-top: 4px solid var(--color-primary);
+}
+
+.result-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.result-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin-bottom: 5px;
+}
+
+.result-unit {
+  font-size: 14px;
+  color: var(--color-gray);
+  font-weight: 500;
+}
+
+.formula-box {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-top: 4px solid var(--color-secondary);
+}
+
+.formula-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.input-with-unit input {
+  flex: 1;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-right: 50px;
+}
+
+.unit {
+  padding: 0 15px;
+  background: var(--color-gray-light);
+  border: 2px solid var(--color-gray-light);
+  border-left: none;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-gray);
+}
+
+.solution-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.solution-selector label {
+  display: flex;
+  align-items: center;
+  padding: 14px;
+  border: 2px solid var(--color-gray-light);
+  border-radius: 10px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+.solution-selector label:hover {
+  border-color: var(--color-primary-light);
+  background-color: rgba(58, 134, 255, 0.05);
+}
+
+.solution-selector input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  accent-color: var(--color-primary);
+}
+
+.solution-selected {
+  background-color: rgba(58, 134, 255, 0.1) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.info-text {
+  font-size: 13px;
+  color: var(--color-gray);
+  margin-top: 8px;
+  font-weight: 400;
+}
+
+.hidden {
+  display: none;
+}
+
+.offline-status {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--color-danger);
+  color: white;
+  padding: 12px;
+  text-align: center;
+  display: none;
+  font-weight: 500;
+  z-index: 1000;
+}
+
+.install-container {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.btn-install {
+  background-color: var(--color-secondary);
+}
+
+.btn-install:hover {
+  background-color: #6a2bc0;
+  box-shadow: 0 5px 15px rgba(131, 56, 236, 0.3);
+}
+
+.result-section {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px;
+  }
+  
+  .solution-selector {
+    grid-template-columns: 1fr;
+  }
+  
+  .result-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .container {
+    padding: 15px;
+  }
+  
+  h1 {
+    font-size: 24px;
+  }
+}
+
+/* Print Optimization */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  /* Hide the input form, buttons, and offline status */
+  #input-form,
+  .actions-row,
+  .btn-install,
+  .offline-status {
+    display: none !important;
+  }
+  
+  /* Ensure container takes full width without shadow/borders */
+  .container {
+    box-shadow: none;
+    padding: 0;
+    max-width: 100%;
+  }
+
+  /* Force display the result if it was calculated */
+  #resultado {
+    display: block !important;
+    margin-top: 0;
+  }
+
+  h1 {
+    text-align: left;
+    margin-bottom: 20px;
+    font-size: 24px;
+  }
+  
+  h1:after {
+    display: none;
+  }
+
+  .result-card {
+    border: 1px solid #ddd;
+    box-shadow: none;
+    padding: 10px;
+    page-break-inside: avoid;
+  }
+  
+  .clinical-note {
+    page-break-inside: avoid;
+    border-left-width: 2px;
+    background-color: transparent !important;
+    border: 1px solid #ddd;
+  }
+}
+
