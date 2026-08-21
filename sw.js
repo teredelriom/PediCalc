@@ -28,6 +28,7 @@ self.addEventListener('install', (event) => {
 
 /* =====================================================
    Fetch – cache-first for static assets, network fallback
+   Fetch – Stale-While-Revalidate strategy
    ===================================================== */
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return; // Skip non-GET
@@ -37,19 +38,26 @@ self.addEventListener('fetch', (event) => {
       if (cached) return cached;
 
       return fetch(event.request).then((response) => {
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
+        // Validate response before caching
         const isSuccessfulSameOriginRequest =
           response &&
           response.ok &&
+          networkResponse &&
+          networkResponse.ok &&
           new URL(event.request.url).origin === self.location.origin;
 
         if (isSuccessfulSameOriginRequest) {
           const responseClone = response.clone();
+          const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
           });
         }
 
         return response;
+        return networkResponse;
       }).catch(() => {
         if (event.request.mode === 'navigate') {
           return caches.match('./index.html');
@@ -57,6 +65,9 @@ self.addEventListener('fetch', (event) => {
 
         return Response.error();
       });
+
+      // Return cached immediately if available, while fetching in background
+      return cachedResponse || fetchPromise;
     })
   );
 });

@@ -58,6 +58,7 @@ window.addEventListener('appinstalled', () => {
 });
 
 // Improved input validation functions
+// Improved input validation functions (Physiological Bounds)
 function validateWeight(weight) {
   if (!weight || isNaN(weight)) {
     return { valid: false, message: "Por favor ingrese un peso válido" };
@@ -68,15 +69,39 @@ function validateWeight(weight) {
   if (weight > MAX_WEIGHT) {
     return { valid: false, message: `El peso máximo es ${MAX_WEIGHT/1000}kg` };
   }
+  if (!weight || isNaN(weight)) return { valid: false, message: "Ingrese un peso válido" };
+  if (weight < 500) return { valid: false, message: "Peso mínimo viable es 500g" };
+  if (weight > 150000) return { valid: false, message: "Peso máximo viable es 150kg" };
   return { valid: true };
 }
 
 function validateAge(age) {
   if (age && (isNaN(age) || age < 0)) {
     return { valid: false, message: "Por favor ingrese una edad válida" };
+  if (age && (isNaN(age) || age < 0)) return { valid: false, message: "Ingrese una edad válida" };
+  if (age > 216) return { valid: false, message: "Edad máxima pediátrica es 216 meses (18 años)" };
+  return { valid: true };
+}
+
+function validateGestationalAge(weeks) {
+  if (weeks && (isNaN(weeks) || weeks < 20 || weeks > 43)) {
+    return { valid: false, message: "Edad gestacional entre 20 y 43 semanas" };
   }
   if (age > MAX_AGE_MONTHS) {
     return { valid: false, message: `La edad máxima es 216 meses (18 años)` };
+  return { valid: true };
+}
+
+function validateHeight(height) {
+  if (height && (isNaN(height) || height < 30 || height > 220)) {
+    return { valid: false, message: "Talla debe estar entre 30cm y 220cm" };
+  }
+  return { valid: true };
+}
+
+function validateCreatinine(cr) {
+  if (cr && (isNaN(cr) || cr < 0.1 || cr > 15)) {
+    return { valid: false, message: "Creatinina debe estar entre 0.1 y 15 mg/dL" };
   }
   return { valid: true };
 }
@@ -87,11 +112,14 @@ function validateTemperature(temp, isBodyTemp = true) {
   const min = isBodyTemp ? MIN_TEMP : MIN_AMBIENT_TEMP;
   const max = isBodyTemp ? MAX_TEMP : MAX_AMBIENT_TEMP;
   
+  const min = isBodyTemp ? 34 : 20;
+  const max = isBodyTemp ? 43 : 50;
   if (temp < min || temp > max) {
     return { 
       valid: false,
       message: `La temperatura debe estar entre ${min}°C y ${max}°C`
     };
+    return { valid: false, message: `Debe estar entre ${min}°C y ${max}°C` };
   }
   return { valid: true };
 }
@@ -148,7 +176,59 @@ function getSelectedSolutionPercentage() {
 
 function calcularGramosGlucosa(volumenMl, porcentajeGlucosa) {
   return (volumenMl * porcentajeGlucosa) / 100;
+// Segregación de Lógica: Módulo de Matemáticas Clínicas (Pure Functions)
+const ClinicalMath = {
+  hollidaySegar: function(pesoKg) {
+    let ml = 0;
+    if (pesoKg <= 10) ml = pesoKg * 100;
+    else if (pesoKg <= 20) ml = 1000 + ((pesoKg - 10) * 50);
+    else ml = 1500 + ((pesoKg - 20) * 20);
+    return ml;
+  },
+  
+  superficieCorporal: function(pesoKg) {
+    return ((pesoKg * 4) + 7) / (90 + pesoKg);
+  },
+  
+  schwartzGFR: function(tallaCm, creatininaMgDl) {
+    // Fórmula de Schwartz actualizada (2009): k = 0.413
+    return (0.413 * tallaCm) / creatininaMgDl;
+  },
+
+  calcularAporteDiario: function(pesoKg, categoria, aporteRangos) {
+    const rango = aporteRangos[categoria];
+    const usaPeso = pesoKg >= 3 && pesoKg <= 8;
+    const superficieCorporal = this.superficieCorporal(pesoKg);
+    const unidad = usaPeso ? "cc/kg/día" : "cc/m²/día";
+    const factor = (rango[usaPeso ? 'kg' : 'm2'][0] + rango[usaPeso ? 'kg' : 'm2'][1]) / 2;
+    const total = usaPeso ? pesoKg * factor : superficieCorporal * factor;
+    return { total, rango: rango[usaPeso ? 'kg' : 'm2'], unidad, factor, usaPeso, superficieCorporal, label: rango.label };
+  },
+
+  calcularGramosGlucosa: function(volumenMl, porcentajeGlucosa) {
+    return (volumenMl * porcentajeGlucosa) / 100;
+  },
+
+  checkPotassiumToxicity: function(potassiumMEq, pesoKg) {
+    // Umbral de alerta de toxicidad: > 4 mEq/kg/día o > 60 mEq/L
+    const meqPerKgDay = potassiumMEq / pesoKg;
+    return {
+      isToxic: meqPerKgDay > 4,
+      limit: 4,
+      current: meqPerKgDay
+    };
+  }
+};
+
+function obtenerCategoriaAporte(deficitPct, condiciones) {
+  if (deficitPct >= 100) return "severa";
+  if (deficitPct >= 75) return "moderada";
+  if (deficitPct >= 50) return "leve";
+  if (condiciones.includes("perdidasPatologicas")) return "patologicas";
+  return "mantenimiento";
 }
+
+
 
 // Datos iniciales
 const APORTE_RANGOS = {
@@ -250,6 +330,8 @@ function seleccionarPreparacion(condiciones, edadMeses, categoria) {
 
 function calcular() {
   ['peso', 'edad', 'tempF', 'tempA'].forEach(id => clearError(id));
+  ['peso', 'edad', 'edadGestacional', 'talla', 'creatinina', 'tempF', 'tempA'].forEach(id => clearError(id));
+  
   const peso = parseFloat(document.getElementById("peso").value);
   const pesoValidation = validateWeight(peso);
   if (!pesoValidation.valid) { showError("peso", pesoValidation.message); return; }
@@ -261,6 +343,24 @@ function calcular() {
   }
   const edadValidation = validateAge(edad);
   if (!edadValidation.valid) { showError("edad", edadValidation.message); return; }
+
+  const edadGest = parseFloat(document.getElementById("edadGestacional").value);
+  if (document.getElementById("edadGestacional").value) {
+    const egVal = validateGestationalAge(edadGest);
+    if (!egVal.valid) { showError("edadGestacional", egVal.message); return; }
+  }
+
+  const talla = parseFloat(document.getElementById("talla").value);
+  if (document.getElementById("talla").value) {
+    const tallaVal = validateHeight(talla);
+    if (!tallaVal.valid) { showError("talla", tallaVal.message); return; }
+  }
+
+  const creatinina = parseFloat(document.getElementById("creatinina").value);
+  if (document.getElementById("creatinina").value) {
+    const crVal = validateCreatinine(creatinina);
+    if (!crVal.valid) { showError("creatinina", crVal.message); return; }
+  }
 
   if (!document.getElementById("tempFiebre").classList.contains("hidden")) {
     const tempFValidation = validateTemperature(parseFloat(document.getElementById("tempF").value));
@@ -274,10 +374,14 @@ function calcular() {
   const pesoKg = peso / 1000;
   const deficitPct = parseFloat(document.getElementById("deshidratacion").value);
   const condiciones = obtenerCondicionesSeleccionadas();
+  
+  // Segregation of logic: math calculations via ClinicalMath
   const categoria = obtenerCategoriaAporte(deficitPct, condiciones);
   const aporte = calcularAporteDiario(pesoKg, categoria);
+  const aporte = ClinicalMath.calcularAporteDiario(pesoKg, categoria, APORTE_RANGOS);
   const total24h = aporte.total;
   const mantenimiento = calcularAporteDiario(pesoKg, "mantenimiento").total;
+  const mantenimiento = ClinicalMath.calcularAporteDiario(pesoKg, "mantenimiento", APORTE_RANGOS).total;
   const deficit = Math.max(total24h - mantenimiento, 0);
   const preparacion = seleccionarPreparacion(condiciones, edad, categoria);
 
@@ -286,11 +390,25 @@ function calcular() {
   document.getElementById("total24hResult").textContent = Math.round(total24h);
   document.getElementById("flujoHorarioResult").textContent = (total24h / 24).toFixed(1);
 
+  // GFR Calculation
+  const gfrCard = document.getElementById("gfrCard");
+  const schwartzRef = document.getElementById("schwartzRef");
+  if (talla && creatinina) {
+    const gfr = ClinicalMath.schwartzGFR(talla, creatinina);
+    document.getElementById("gfrResult").textContent = gfr.toFixed(1);
+    gfrCard.classList.remove("hidden");
+    schwartzRef.classList.remove("hidden");
+  } else {
+    gfrCard.classList.add("hidden");
+    schwartzRef.classList.add("hidden");
+  }
+
   const electrolitos = calcularRequerimientosElectrolitos(pesoKg);
   const solucionOptima = calcularSolucionRecomendada(total24h, preparacion, condiciones);
   mostrarFormulaHollidaySegar(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
   mostrarNutricionReferencia(edad);
   mostrarNotasClinicas(solucionOptima, condiciones, edad, categoria);
+  mostrarNotasClinicas(solucionOptima, condiciones, edad, categoria, pesoKg);
   document.getElementById("solucionesAlternativas").classList.add("hidden");
   document.getElementById("resultado").classList.remove("hidden");
   
@@ -413,9 +531,23 @@ function mostrarNutricionReferencia(edadMeses) {
 }
 
 function mostrarNotasClinicas(solucion, condiciones, edadMeses, categoria) {
+function mostrarNotasClinicas(solucion, condiciones, edadMeses, categoria, pesoKg) {
   const container = document.getElementById("notasClinicas");
   container.innerHTML = "";
   container.classList.remove("hidden");
+  
+  // Toxicity check
+  if (solucion.incluyeK) {
+    const kMeq = (solucion.volumen / 500) * 10.05; // 7.5 cc de KCl = 10.05 mEq por base 500
+    const checkK = ClinicalMath.checkPotassiumToxicity(kMeq, pesoKg);
+    if (checkK.isToxic) {
+      const toxicDiv = document.createElement("div");
+      toxicDiv.className = "clinical-note warning p-3 rounded-md mb-2";
+      toxicDiv.innerHTML = `<p class="font-bold text-danger"><i class="fas fa-exclamation-triangle mr-1"></i>¡ALERTA DE TOXICIDAD - POTASIO!</p><p class="text-sm mt-1">El aporte de K+ proyectado (${checkK.current.toFixed(2)} mEq/kg/día) supera el límite máximo seguro documentado de ${checkK.limit} mEq/kg/día. Reduzca la dosis basal.</p>`;
+      container.appendChild(toxicDiv);
+    }
+  }
+
   const notas = [
     { tipo: 'success', texto: '<strong>Requerimientos diarios:</strong> Na 3-4 mEq/kg/d, K 2-3 mEq/kg/d, Cl 3-4 mEq/kg/d, Ca 50-100 mg/kg/d, Mg 0,4-0,9 mEq/kg/d y P 15-50 mg/kg/d.' },
     { tipo: 'success', texto: '<strong>Potasio-K:</strong><br>1. KCl 10% tiene 1,34 mEq/ml<br>&nbsp;&nbsp;a. Bolo si K < 3 por vía periférica: 0,5 mEq/kg máximo 20 cc diluído al cuarto a pasar en 4 horas<br>2. Yonka (oral) tiene 1,34 mEq K/ml<br>3. PMK 15% tiene 1,1 mEq/ml' },
@@ -548,6 +680,9 @@ function saveFormData() {
     peso: document.getElementById('peso').value,
     edad: document.getElementById('edad').value,
     unidadEdad: document.getElementById('unidadEdad').value,
+    edadGestacional: document.getElementById('edadGestacional').value,
+    talla: document.getElementById('talla').value,
+    creatinina: document.getElementById('creatinina').value,
     deshidratacion: document.getElementById('deshidratacion').value,
     tempF: document.getElementById('tempF').value,
     tempA: document.getElementById('tempA').value,
@@ -568,6 +703,9 @@ function loadFormData() {
       if(data.peso) document.getElementById('peso').value = data.peso;
       if(data.edad) document.getElementById('edad').value = data.edad;
       if(data.unidadEdad) document.getElementById('unidadEdad').value = data.unidadEdad;
+      if(data.edadGestacional) document.getElementById('edadGestacional').value = data.edadGestacional;
+      if(data.talla) document.getElementById('talla').value = data.talla;
+      if(data.creatinina) document.getElementById('creatinina').value = data.creatinina;
       if(data.deshidratacion) document.getElementById('deshidratacion').value = data.deshidratacion;
       if(data.tempF) document.getElementById('tempF').value = data.tempF;
       if(data.tempA) document.getElementById('tempA').value = data.tempA;
@@ -600,6 +738,10 @@ function loadFormData() {
 // Inicialización
 document.addEventListener("DOMContentLoaded", () => {
   
+  function setBtnDisabled(isDisabled) {
+    document.getElementById("btnCalcular").disabled = isDisabled;
+  }
+
   document.getElementById("peso").addEventListener("input", function() {
     const validation = validateWeight(parseFloat(this.value));
     if (!validation.valid && this.value) {
@@ -608,6 +750,33 @@ document.addEventListener("DOMContentLoaded", () => {
       clearError("peso");
     }
     document.getElementById("btnCalcular").disabled = !validation.valid;
+    if (!validation.valid && this.value) showError("peso", validation.message);
+    else clearError("peso");
+    setBtnDisabled(!validation.valid);
+  });
+
+  document.getElementById("talla").addEventListener("input", function() {
+    if(!this.value) { clearError("talla"); return; }
+    const validation = validateHeight(parseFloat(this.value));
+    if (!validation.valid) showError("talla", validation.message);
+    else clearError("talla");
+    setBtnDisabled(!validation.valid && this.value !== "");
+  });
+
+  document.getElementById("creatinina").addEventListener("input", function() {
+    if(!this.value) { clearError("creatinina"); return; }
+    const validation = validateCreatinine(parseFloat(this.value));
+    if (!validation.valid) showError("creatinina", validation.message);
+    else clearError("creatinina");
+    setBtnDisabled(!validation.valid && this.value !== "");
+  });
+
+  document.getElementById("edadGestacional").addEventListener("input", function() {
+    if(!this.value) { clearError("edadGestacional"); return; }
+    const validation = validateGestationalAge(parseFloat(this.value));
+    if (!validation.valid) showError("edadGestacional", validation.message);
+    else clearError("edadGestacional");
+    setBtnDisabled(!validation.valid && this.value !== "");
   });
 
   function updateAgeValidation() {
@@ -620,12 +789,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (unidadEdad && unidadEdad.value === "años") {
       val *= 12;
     }
+    if (unidadEdad && unidadEdad.value === "años") val *= 12;
     const validation = validateAge(val);
     if (!validation.valid) {
       showError("edad", validation.message);
     } else {
       clearError("edad");
     }
+    if (!validation.valid) showError("edad", validation.message);
+    else clearError("edad");
+    setBtnDisabled(!validation.valid);
   }
 
   document.getElementById("edad").addEventListener("input", updateAgeValidation);
@@ -633,6 +806,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (selUnidad) {
     selUnidad.addEventListener("change", updateAgeValidation);
   }
+  if (selUnidad) selUnidad.addEventListener("change", updateAgeValidation);
 
   document.querySelectorAll('#checkboxes input[type="checkbox"]').forEach(checkbox => {
     checkbox.addEventListener('change', toggleTemperaturas);

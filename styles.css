@@ -13,12 +13,52 @@
   --color-gray-light: #e9ecef;
 }
 
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%) !important;
+    color: #e9ecef !important;
+  }
+  .container, .result-card, .formula-box, .solution-selector label, .bg-white {
+    background-color: #242424 !important;
+    border-color: #333 !important;
+  }
+  .text-gray-700, .text-gray-600 {
+    color: #ced4da !important;
+  }
+  .border-gray-200, .border-gray-300 {
+    border-color: #495057 !important;
+  }
+  input[type="number"], select, .input-highlight {
+    background-color: #2b2b2b !important;
+    color: #f8f9fa !important;
+    border-color: #495057 !important;
+  }
+  .unit {
+    background-color: #343a40 !important;
+    border-color: #495057 !important;
+    color: #ced4da !important;
+  }
+  .unit:hover {
+    background-color: #495057 !important;
+    color: #fff !important;
+  }
+  .solution-selector label:hover {
+    background-color: rgba(63, 184, 175, 0.15) !important;
+  }
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   min-height: 100vh;
   line-height: 1.6;
   color: var(--color-dark);
+  font-size: 17px; /* Aumentado por requerimiento ergonómico > 16px */
+}
+
+/* Base minimum touch target */
+button, input, select, .solution-selector label {
+  min-height: 44px;
 }
 
 .solution-card {
