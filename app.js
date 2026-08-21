@@ -217,6 +217,24 @@ function toggleTemperaturas() {
   if (tempAmbiente) tempAmbiente.classList.toggle("hidden", !condiciones.includes("ambienteCalido"));
 }
 
+function validarTemperaturas(condiciones) {
+  const campos = [
+    { condicion: "fiebre", id: "tempF", corporal: true, etiqueta: "Temperatura corporal" },
+    { condicion: "ambienteCalido", id: "tempA", corporal: false, etiqueta: "Temperatura ambiental" }
+  ];
+
+  for (const campo of campos) {
+    if (!condiciones.includes(campo.condicion)) continue;
+    const valor = parseFloat(document.getElementById(campo.id)?.value);
+    const validacion = validateTemperature(valor, campo.corporal);
+    if (!validacion.valid) {
+      showError(campo.id, `${campo.etiqueta}: ${validacion.message}`);
+      return false;
+    }
+  }
+  return true;
+}
+
 function getSelectedSolutionPercentage() {
   const selected = document.querySelector('input[name="solucionBase"]:checked');
   return selected ? parseInt(selected.value) : 5;
@@ -567,6 +585,58 @@ function mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h
     </ul>`;
 }
 
+function obtenerRangoNeonatal(pesoKg, horasVida) {
+  const etapa = horasVida <= 24 ? "≤24 h" : horasVida < 48 ? "24–48 h" : "≥48 h";
+  if (pesoKg < 1) return { etapa, glucosa: "SG 5–10%", volumen: etapa === "≤24 h" ? "100–150" : etapa === "24–48 h" ? "120–150" : "140–190" };
+  if (pesoKg <= 1.5) return { etapa, glucosa: "SG 10%", volumen: etapa === "≤24 h" ? "80–100" : etapa === "24–48 h" ? "100–120" : "120–140" };
+  return { etapa, glucosa: "SG 10%", volumen: etapa === "≤24 h" ? "60–80" : etapa === "24–48 h" ? "80–120" : "120–160" };
+}
+
+function mostrarHerramientasClinicas(pesoKg, na, k, excesoBase, glucemia, albumina, calcio, horasVida) {
+  const container = document.getElementById("herramientasClinicas");
+  if (!container) return;
+
+  const cargaHabitual = `${(pesoKg * 10).toFixed(0)}–${(pesoKg * 20).toFixed(0)} mL`;
+  const cargaLenta = `${(pesoKg * 5).toFixed(0)}–${(pesoKg * 10).toFixed(0)} mL`;
+  const albumina5 = `${(pesoKg * 10).toFixed(0)}–${(pesoKg * 20).toFixed(0)} mL de albúmina 5%`;
+  const bloques = [
+    `<div class="clinical-note success p-3 rounded-md"><p class="font-semibold text-primary">Cargas y expansores</p><ul class="list-disc pl-5 mt-1"><li>Cristaloide: ${cargaHabitual} (10–20 mL/kg); en cardiopatía o nefropatía: ${cargaLenta} (5–10 mL/kg).</li><li>Albúmina 5%: ${albumina5}. Aporta 5 g por cada 100 mL; verificar concentración: gramos × 100 / volumen total.</li><li>Plan B oral: ${(pesoKg * 100).toFixed(0)} mL en 4 horas, fraccionado en 8 tomas. Plan C IV: ${(pesoKg * 50).toFixed(0)} mL, luego ${(pesoKg * 25).toFixed(0)} mL y ${(pesoKg * 25).toFixed(0)} mL por hora.</li></ul></div>`,
+    `<div class="clinical-note p-3 rounded-md"><p class="font-semibold text-primary">Composición de referencia</p><p class="mt-1">NaCl 10%: 1.71 mEq/mL · KCl 10%: 1.34 mEq/mL · NaCl 3%: 51.3 mEq/100 mL · gluconato de calcio 10%: 9 mg/mL de Ca elemental · sulfato de magnesio 25%: 0.81 mEq/mL.</p></div>`,
+    `<div class="clinical-note p-3 rounded-md"><p class="font-semibold text-primary">Mantenimiento IV</p><p class="mt-1">Priorizar soluciones isotónicas. La mezcla SF 0.9% + SG 5% 1:1 (SF final 0.45%) queda reservada para hipernatremia o déficit de agua; SF 0.9% sin glucosa puede considerarse ante hiperglucemia de ingreso. En insuficiencia renal o neonatos, revisar el requisito de 20 mL de SF 0.9% por cada 100 mL calculados.</p></div>`
+  ];
+
+  if (!isNaN(horasVida)) {
+    const neonatal = obtenerRangoNeonatal(pesoKg, horasVida);
+    const restricciones = horasVida < 48 ? "No agregar sodio antes de 48 h; no agregar potasio durante las primeras 48–72 h sin reevaluación clínica." : "Reevaluar sodio, potasio, diuresis y electrolitos antes de añadir suplementos.";
+    bloques.push(`<div class="clinical-note warning p-3 rounded-md"><p class="font-semibold text-danger">Guía neonatal (${neonatal.etapa})</p><p class="mt-1">Peso ${pesoKg.toFixed(2)} kg: ${neonatal.volumen} mL/kg/día con ${neonatal.glucosa}. VIG inicial habitual 5 mg/kg/min (basal 6; 4–5 en prematuros; máximo 12). ${restricciones}</p></div>`);
+  }
+
+  if (!isNaN(na) && na < 130) {
+    const deficitNa = ClinicalMath.correccionHiponatremia(pesoKg, 135, na);
+    bloques.push(`<div class="clinical-note warning p-3 rounded-md"><p class="font-semibold text-danger">Corrección de hiponatremia</p><p class="mt-1">Déficit estimado a Na objetivo 135: ${deficitNa.toFixed(1)} mEq = peso × 0.6 × (135 − Na). Referencia operativa: mitad en 8 h y mitad en 16 h; no corregir más de 10 mEq/día sin protocolo y monitorización.</p></div>`);
+  }
+  if (!isNaN(na) && na > 150) {
+    const aguaLibre = ClinicalMath.aguaLibreHipernatremia(pesoKg, na, 140);
+    bloques.push(`<div class="clinical-note warning p-3 rounded-md"><p class="font-semibold text-danger">Déficit de agua libre</p><p class="mt-1">Estimado para 48 h: ${aguaLibre.toFixed(2)} L = peso × 0.6 × (Na/140 − 1). Individualizar la velocidad de descenso y monitorizar sodio seriado.</p></div>`);
+  }
+  if (!isNaN(k) && k < 3.5) {
+    const deficitK = Math.max((3 - k) * 4 * pesoKg, 0);
+    bloques.push(`<div class="clinical-note warning p-3 rounded-md"><p class="font-semibold text-danger">Déficit de potasio</p><p class="mt-1">Estimado: ${deficitK.toFixed(1)} mEq = (3 − K) × 4 × peso, aplicable cuando K es ≤3 mEq/L. Verificar función renal, diuresis, ECG y vía de administración antes de reponer.</p></div>`);
+  }
+  if (!isNaN(excesoBase) && excesoBase < 0) {
+    const bicarbonato = Math.abs(ClinicalMath.correccionBicarbonato(excesoBase, pesoKg));
+    bloques.push(`<div class="clinical-note p-3 rounded-md"><p class="font-semibold text-primary">Corrección de bicarbonato</p><p class="mt-1">Déficit estimado: ${bicarbonato.toFixed(1)} mEq = |EB| × 0.3 × peso. No administrar por la misma vía que calcio; requiere indicación y monitorización clínica.</p></div>`);
+  }
+  if (!isNaN(calcio) && !isNaN(albumina)) {
+    bloques.push(`<div class="clinical-note p-3 rounded-md"><p class="font-semibold text-primary">Calcio corregido</p><p class="mt-1">${ClinicalMath.calcioCorregido(calcio, albumina).toFixed(1)} mg/dL = calcio sérico − albúmina + 4.</p></div>`);
+  }
+  if (!isNaN(glucemia) && glucemia < 70) {
+    bloques.push(`<div class="clinical-note warning p-3 rounded-md"><p class="font-semibold text-danger">Hipoglucemia</p><p class="mt-1">Referencia neonatal: ${(pesoKg * 2).toFixed(1)} mL de SG 10% (2 mL/kg) en bolo. Requiere comprobación inmediata de glucosa y protocolo local.</p></div>`);
+  }
+  bloques.push(`<p class="text-xs text-gray-600"><strong>Seguridad:</strong> cálculos de apoyo para profesionales. No sustituyen protocolos institucionales, valoración clínica, monitorización ni órdenes médicas.</p>`);
+  container.innerHTML = bloques.join("");
+}
+
 // Ejecución Principal
 function calcular() {
   ['peso', 'edad', 'edadGestacional', 'talla', 'creatinina', 'tempF', 'tempA'].forEach(id => clearError(id));
@@ -602,6 +672,7 @@ function calcular() {
   const pesoKg = peso / 1000;
   const deficitPct = parseFloat(document.getElementById("deshidratacion").value);
   const condiciones = obtenerCondicionesSeleccionadas();
+  if (!validarTemperaturas(condiciones)) return;
   
   const categoria = obtenerCategoriaAporte(deficitPct, condiciones);
   const aporte = ClinicalMath.calcularAporteDiario(pesoKg, categoria, APORTE_RANGOS);
@@ -641,7 +712,12 @@ function calcular() {
   const naBasal = parseFloat(document.getElementById("naBasal")?.value);
   const kBasal = parseFloat(document.getElementById("kBasal")?.value);
   const glucemia = parseFloat(document.getElementById("glucemia")?.value);
+  const albumina = parseFloat(document.getElementById("albumina")?.value);
+  const calcio = parseFloat(document.getElementById("calcioSerico")?.value);
+  const horasVida = parseFloat(document.getElementById("horasVida")?.value);
   const scq = parseFloat(document.getElementById("scq")?.value);
+
+  mostrarHerramientasClinicas(pesoKg, naBasal, kBasal, parseFloat(document.getElementById("excesoBase")?.value), glucemia, albumina, calcio, horasVida);
   
   if (!isNaN(pesoKg) && !isNaN(naBasal) && !isNaN(kBasal) && !isNaN(hco3) && !isNaN(cl)) {
     const ag = ClinicalMath.anionGap(naBasal, kBasal, hco3, cl);
@@ -767,6 +843,8 @@ function saveFormData() {
     excesoBase: document.getElementById('excesoBase')?.value,
     glucemia: document.getElementById('glucemia')?.value,
     albumina: document.getElementById('albumina')?.value,
+    calcioSerico: document.getElementById('calcioSerico')?.value,
+    horasVida: document.getElementById('horasVida')?.value,
     scq: document.getElementById('scq')?.value,
     nptProteinas: document.getElementById('nptProteinas')?.value,
     nptLipidos: document.getElementById('nptLipidos')?.value,
@@ -785,7 +863,7 @@ function loadFormData() {
       const fields = [
         'peso', 'edad', 'unidadEdad', 'edadGestacional', 'talla', 'creatinina', 
         'deshidratacion', 'tempF', 'tempA', 'naBasal', 'kBasal', 'clBasal', 
-        'hco3Real', 'excesoBase', 'glucemia', 'albumina', 'scq', 
+        'hco3Real', 'excesoBase', 'glucemia', 'albumina', 'calcioSerico', 'horasVida', 'scq',
         'nptProteinas', 'nptLipidos', 'nptVig'
       ];
       fields.forEach(f => {
@@ -814,10 +892,6 @@ function loadFormData() {
 
 // Inicialización de Eventos DOM
 document.addEventListener("DOMContentLoaded", () => {
-  function setBtnDisabled(isDisabled) {
-    document.getElementById("btnCalcular").disabled = isDisabled;
-  }
-
   function attachValidation(id, validateFn) {
     const element = document.getElementById(id);
     if (!element) return;
@@ -826,7 +900,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const validation = validateFn(parseFloat(this.value));
       if (!validation.valid) showError(id, validation.message);
       else clearError(id);
-      setBtnDisabled(!validation.valid);
     });
   }
 
@@ -834,6 +907,8 @@ document.addEventListener("DOMContentLoaded", () => {
   attachValidation("talla", validateHeight);
   attachValidation("creatinina", validateCreatinine);
   attachValidation("edadGestacional", validateGestationalAge);
+  attachValidation("tempF", value => validateTemperature(value, true));
+  attachValidation("tempA", value => validateTemperature(value, false));
 
   function updateAgeValidation() {
     let val = parseFloat(document.getElementById("edad").value);
@@ -843,7 +918,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const validation = validateAge(val);
     if (!validation.valid) showError("edad", validation.message);
     else clearError("edad");
-    setBtnDisabled(!validation.valid);
   }
 
   document.getElementById("edad").addEventListener("input", updateAgeValidation);

@@ -9,6 +9,8 @@ Esta aplicación web permite calcular de manera precisa los requerimientos de hi
 - Recomendación automática de solución intravenosa óptima.
 - Comparación de soluciones alternativas.
 - Indicaciones completas para enfermería con instrucciones de preparación.
+- Panel de herramientas complementarias con cálculo neonatal por horas de vida, cargas de cristaloides/albúmina, planes de diarrea y correcciones de Na, K, bicarbonato y calcio cuando se ingresan los laboratorios necesarios.
+- Mensajes de seguridad que recuerdan la necesidad de validar cada resultado con el protocolo institucional y la monitorización clínica.
 - Exportación de resultados como imagen, impresión o copiar al portapapeles.
 - Interfaz adaptativa y moderna con Tailwind CSS.
 - Compatible con instalación como Aplicación Web Progresiva (PWA).
