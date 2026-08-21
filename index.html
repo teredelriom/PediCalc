@@ -370,10 +370,13 @@
         <div>
           <label class="block text-sm font-medium text-[#3FB8AF] mb-1">Edad</label>
           <div class="input-with-unit">
-            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 6" step="1" min="0">
-            <span class="unit">meses</span>
+            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0">
+            <select id="unidadEdad" class="unit focus:outline-none cursor-pointer">
+              <option value="meses">meses</option>
+              <option value="años">años</option>
+            </select>
           </div>
-          <p class="info-text">Ingrese edad en meses (ej. 6 para 6 meses; 24 para 2 años)</p>
+          <p class="info-text">Ingrese edad (ej. 6 meses; 2 años)</p>
           <p id="edad-error" class="text-red-500 text-xs mt-1 hidden"></p>
         </div>
       </div>
@@ -878,7 +881,11 @@
       const pesoValidation = validateWeight(peso);
       if (!pesoValidation.valid) { showError("peso", pesoValidation.message); return; }
 
-      const edad = parseFloat(document.getElementById("edad").value) || 0;
+      let edad = parseFloat(document.getElementById("edad").value) || 0;
+      const unidadEdad = document.getElementById("unidadEdad");
+      if (unidadEdad && unidadEdad.value === "años") {
+        edad *= 12;
+      }
       const edadValidation = validateAge(edad);
       if (!edadValidation.valid) { showError("edad", edadValidation.message); return; }
 
@@ -1003,10 +1010,10 @@
       if (!container) return;
 
       const grupo = edadMeses < 24
-        ? "Lactante: promover lactancia materna a libre demanda; si corresponde, indicar fórmula láctea, volumen, fraccionamiento y papilla según desarrollo y tolerancia."
+        ? "<strong>Lactantes:</strong><br>i. La lactancia materna es la alimentación principal y debemos promoverla (siempre a libre demanda)<br>ii. Indicar fórmula láctea (Lactancia materna, fórmula de inicio, FL 7,5%, FL 10%; ocasionalmente fórmulas especiales), volumen y fraccionamiento<br>iii. Indicar papilla lactante menor o lactante mayor de acuerdo al desarrollo del niño y en número según tolerancia esperada"
         : edadMeses < 72
-          ? "Preescolar: considerar régimen preescolar común, liviano, blando sin residuos, líquido o hídrico según indicación clínica."
-          : "Escolar/adolescente: considerar régimen escolar común, liviano, blando sin residuos, líquido o hídrico según indicación clínica.";
+          ? "<strong>Preescolares:</strong> Régimen preescolar común / liviano / blando sin residuos / líquido / hídrico"
+          : "<strong>Escolares y adolescentes:</strong> Régimen escolar común / liviano / blando sin residuos / líquido / hídrico";
 
       container.innerHTML = `
         <div class="clinical-note success p-3 rounded-md">
@@ -1028,16 +1035,19 @@
       container.innerHTML = "";
       container.classList.remove("hidden");
       const notas = [
-        { tipo: 'success', texto: 'Requerimientos diarios: Na 3-4 mEq/kg/d, K 2-3 mEq/kg/d, Cl 3-4 mEq/kg/d, Ca 50-100 mg/kg/d, Mg 0,4-0,9 mEq/kg/d y P 15-50 mg/kg/d.' },
-        { tipo: 'success', texto: 'NaCl 10% aporta 1,71 mEq/ml. KCl 10% y Yonka aportan 1,34 mEq/ml. PMK 15% aporta 1,1 mEq/ml. Sulfato de magnesio 25%: bolo 0,1-0,2 ml/kg (máx. 5 cc). Gluconato de calcio 10%: 8,94 mg/cc; bolo 0,5-1 ml/kg (máx. 20 cc).' }
+        { tipo: 'success', texto: '<strong>Requerimientos diarios:</strong> Na 3-4 mEq/kg/d, K 2-3 mEq/kg/d, Cl 3-4 mEq/kg/d, Ca 50-100 mg/kg/d, Mg 0,4-0,9 mEq/kg/d y P 15-50 mg/kg/d.' },
+        { tipo: 'success', texto: '<strong>Potasio-K:</strong><br>1. KCl 10% tiene 1,34 mEq/ml<br>&nbsp;&nbsp;a. Bolo si K < 3 por vía periférica: 0,5 mEq/kg máximo 20 cc diluído al cuarto a pasar en 4 horas<br>2. Yonka (oral) tiene 1,34 mEq K/ml<br>3. PMK 15% tiene 1,1 mEq/ml' },
+        { tipo: 'success', texto: '<strong>Sodio-Na:</strong> NaCl 10% tiene 1,71 mEq/ml<br>1. Bolo si Na < 120 1 ml/kg' },
+        { tipo: 'success', texto: '<strong>Fósforo-P:</strong><br>1. PMK 15% tiene 1,1 mEq/ml<br>&nbsp;&nbsp;a. Bolo si P < 2,5: 0,5-1 mEq/kg diluído al cuarto a pasar en 4 horas<br>2. Jarabe de Fosfato: 1,1 mEq/ml' },
+        { tipo: 'success', texto: '<strong>Magnesio-Mg:</strong> Sulfato de Magnesio 25%<br>a. Bolo 0,1 – 0,2 ml/kg (máximo 5 cc)' },
+        { tipo: 'success', texto: '<strong>Calcio-Ca:</strong> Gluconato de Calcio 10% tiene 8,94 mg cada cc<br>a. Bolo en hipocalcemia sintomática 0,5-1 ml/kg (máximo 20 cc) diluido al cuarto en vía periférica a pasar en 1 hora' },
+        { tipo: 'success', texto: '<strong>Bicarbonato:</strong> Bicarbonato 2/3 M tiene 0,66mEq/ml<br>- Bicarbonato de sodio 8.4%: ampolla 10 ml (10meq de Na)<br>- 13ml de del 8.4%-->20ml del 2/3 Molar' }
       ];
-      if (condiciones.includes("hiponatremia")) notas.push({ tipo: 'warning', texto: 'Hiponatremia: bolo NaCl 10% 1 ml/kg si Na < 120, según evaluación médica.' });
-      if (condiciones.includes("acidosisSevera")) notas.push({ tipo: 'warning', texto: 'Bicarbonato 2/3 M aporta 0,66 mEq/ml; 13 ml de NaHCO₃ 8,4% equivalen aproximadamente a 20 ml de 2/3 M. Ampolla NaHCO₃ 8,4% 10 ml = 10 mEq de Na.' });
       if (edadMeses <= 3 && categoria === "mantenimiento") notas.push({ tipo: 'success', texto: 'Paciente ≤ 3 meses sin pérdidas patológicas: se prioriza mezcla Sodio 35.' });
       notas.forEach(nota => {
         const noteDiv = document.createElement("div");
         noteDiv.className = `clinical-note ${nota.tipo} p-3 rounded-md`;
-        noteDiv.innerHTML = `<p class="font-semibold ${nota.tipo === 'warning' ? 'text-[#FF3D7F]' : 'text-[#3FB8AF]'}"><i class="fas fa-info-circle mr-1"></i>Nota Clínica</p><p class="mt-1 text-sm">${nota.texto}</p>`;
+        noteDiv.innerHTML = `<p class="text-sm">${nota.texto}</p>`;
         container.appendChild(noteDiv);
       });
     }
@@ -1069,7 +1079,10 @@
     function copiarIndicaciones() {
       // Obtener datos del paciente
       const peso = parseFloat(document.getElementById("peso").value) / 1000;
-      const edad = document.getElementById("edad").value || "No especificada";
+      const edadVal = document.getElementById("edad").value;
+      const unidadEdad = document.getElementById("unidadEdad");
+      const unidadText = unidadEdad ? unidadEdad.value : "meses";
+      const edadStr = edadVal ? `${edadVal} ${unidadText}` : "No especificada";
       const condiciones = obtenerCondicionesSeleccionadas().join(", ") || "Ninguna";
       
       // Obtener resultados calculados
@@ -1089,7 +1102,7 @@
       const textoACopiar = `INDICACIÓN DE HIDRATACIÓN PARENTERAL - PEDIATRÍA\n\n` +
                          `DATOS DEL PACIENTE\n` +
                          `• Peso: ${peso.toFixed(3)} kg\n` +
-                         `• Edad: ${edad} meses\n` +
+                         `• Edad: ${edadStr}\n` +
                          `• Condiciones relevantes: ${condiciones}\n\n` +
                          
                          `REQUERIMIENTOS CALCULADOS\n` +
@@ -1237,14 +1250,29 @@
         document.getElementById("btnCalcular").disabled = !validation.valid;
       });
 
-      document.getElementById("edad").addEventListener("input", function() {
-        const validation = validateAge(parseFloat(this.value));
-        if (!validation.valid && this.value) {
+      function updateAgeValidation() {
+        let val = parseFloat(document.getElementById("edad").value);
+        if (isNaN(val)) {
+          clearError("edad");
+          return;
+        }
+        const unidadEdad = document.getElementById("unidadEdad");
+        if (unidadEdad && unidadEdad.value === "años") {
+          val *= 12;
+        }
+        const validation = validateAge(val);
+        if (!validation.valid) {
           showError("edad", validation.message);
         } else {
           clearError("edad");
         }
-      });
+      }
+
+      document.getElementById("edad").addEventListener("input", updateAgeValidation);
+      const selUnidad = document.getElementById("unidadEdad");
+      if (selUnidad) {
+        selUnidad.addEventListener("change", updateAgeValidation);
+      }
 
       // Toggle temperature inputs when conditions change
       document.querySelectorAll('#checkboxes input[type="checkbox"]').forEach(checkbox => {
