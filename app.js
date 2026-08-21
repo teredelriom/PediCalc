@@ -229,13 +229,6 @@ function obtenerCondicionesSeleccionadas() {
 
 // Módulo de Matemáticas Clínicas
 const ClinicalMath = {
-  hollidaySegar: function(pesoKg) {
-    let ml = 0;
-    if (pesoKg <= 10) ml = pesoKg * 100;
-    else if (pesoKg <= 20) ml = 1000 + ((pesoKg - 10) * 50);
-    else ml = 1500 + ((pesoKg - 20) * 20);
-    return ml;
-  },
   superficieCorporal: function(pesoKg) {
     return ((pesoKg * 4) + 7) / (90 + pesoKg);
   },
@@ -407,7 +400,7 @@ function procesarNPT(pesoKg) {
   document.getElementById("notasClinicas").appendChild(nptDiv);
 }
 
-function calcularSolucionRecomendada(total24h, preparacion, condiciones) {
+function calcularSolucionRecomendada(total24h, preparacion) {
   const VOLUMEN_BASE_PREPARACION = 500; 
   const MEQ_POTASIO_POR_BASE = 10.05; 
   const porcentajeGlucosa = getSelectedSolutionPercentage();
@@ -550,8 +543,8 @@ function mostrarNotasClinicas(solucion, edadMeses, categoria, pesoKg) {
   });
 }
 
-function mostrarFormulaHollidaySegar(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos) {
-  const container = document.getElementById("hollidayOriginal");
+function mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos) {
+  const container = document.getElementById("desgloseAportesContainer");
   const rangoTexto = aporte.rango[0] === aporte.rango[1] ? aporte.rango[0] : `${aporte.rango[0]}-${aporte.rango[1]}`;
   const base = aporte.usaPeso
     ? `${pesoKg.toFixed(2)} kg x ${aporte.factor} ${aporte.unidad}`
@@ -638,7 +631,7 @@ function calcular() {
   const electrolitos = ClinicalMath.calcularRequerimientosElectrolitos(pesoKg);
   const solucionOptima = calcularSolucionRecomendada(total24h, preparacion);
   
-  mostrarFormulaHollidaySegar(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
+  mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
   mostrarNutricionReferencia(edad);
   mostrarNotasClinicas(solucionOptima, edad, categoria, pesoKg);
   
@@ -715,11 +708,21 @@ function copiarIndicaciones() {
   const composicion = Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(1) li")).map(li => li.textContent).join('\n     ');
   const aporteEstimado = Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(2) li")).map(li => li.textContent).join('\n     ');
   
+  let notasExtras = "";
+  const notasClinicasNodes = document.querySelectorAll("#notasClinicas .clinical-note");
+  if (notasClinicasNodes.length > 0) {
+    notasExtras = `\nNOTAS CLÍNICAS Y ANALÍTICAS\n` + 
+      Array.from(notasClinicasNodes)
+        .map(node => "  - " + node.textContent.replace(/\s+/g, ' ').trim())
+        .join('\n') + `\n`;
+  }
+
   const textoACopiar = `INDICACIÓN DE HIDRATACIÓN PARENTERAL - PEDIATRÍA\n\n` +
     `DATOS DEL PACIENTE\n  Peso: ${peso.toFixed(3)} kg\n  Edad: ${edadStr}\n  Condiciones relevantes: ${condiciones}\n\n` +
     `REQUERIMIENTOS CALCULADOS\n  Mantenimiento: ${mantenimiento} mL/24h\n  Déficit: ${deficit} mL\n  Total 24h: ${total24h} mL\n  Flujo horario: ${flujoHorario} mL/h\n\n` +
-    `SOLUCIÓN RECOMENDADA\n  ${solucionNombre}\n  Composición:\n     ${composicion}\n  Aporte estimado:\n     ${aporteEstimado}\n\n` +
-    `OBSERVACIONES\n  Monitorizar electrolitos séricos (Na, K) cada 24h inicialmente\n  Controlar balance hídrico estricto\n  Revaluar requerimientos diariamente`;
+    `SOLUCIÓN RECOMENDADA\n  ${solucionNombre}\n  Composición:\n     ${composicion}\n  Aporte estimado:\n     ${aporteEstimado}\n` +
+    notasExtras +
+    `\nOBSERVACIONES\n  Monitorizar electrolitos séricos (Na, K) cada 24h inicialmente\n  Controlar balance hídrico estricto\n  Revaluar requerimientos diariamente`;
 
   navigator.clipboard.writeText(textoACopiar)
     .then(() => {
