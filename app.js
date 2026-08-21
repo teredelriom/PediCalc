@@ -146,6 +146,10 @@ function getSelectedSolutionPercentage() {
   return selected ? parseInt(selected.value) : 5;
 }
 
+function calcularGramosGlucosa(volumenMl, porcentajeGlucosa) {
+  return (volumenMl * porcentajeGlucosa) / 100;
+}
+
 // Datos iniciales
 const APORTE_RANGOS = {
   mantenimiento: { kg: [100, 150], m2: [2000, 2500], label: "Volumen mantención" },
@@ -297,20 +301,24 @@ function calcular() {
 function calcularSolucionRecomendada(total24h, preparacion, condiciones) {
   const VOLUMEN_BASE_PREPARACION = 500; // cc
   const MEQ_POTASIO_POR_BASE = 10.05; // 7.5 cc de KCl 10% (1.34 mEq/cc) = 10.05 mEq por cada 500 cc
+  const porcentajeGlucosa = getSelectedSolutionPercentage();
   
   const factor = total24h / VOLUMEN_BASE_PREPARACION;
   const componentesEscalados = preparacion.componentes.map(item => {
     const match = item.match(/^(.*?)(\d+(?:[,.]\d+)?)\s*(cc|ml)/i);
     if (!match) return item;
     const valor = parseFloat(match[2].replace(',', '.')) * factor;
-    return `${match[1]}${valor.toFixed(1).replace('.', ',')} ${match[3]}`;
+    const componente = match[1].replace(/S\. Glucosado \d+%/i, `S. Glucosado ${porcentajeGlucosa}%`);
+    return `${componente}${valor.toFixed(1).replace('.', ',')} ${match[3]}`;
   });
   const solucion = {
     ...preparacion,
     volumen: Math.round(total24h),
+    porcentajeGlucosa,
     componentesEscalados,
     sodioTotal: (preparacion.naPorLitro * (total24h / 1000)).toFixed(1),
-    potasioTotal: preparacion.incluyeK ? (MEQ_POTASIO_POR_BASE * factor).toFixed(1) : "0"
+    potasioTotal: preparacion.incluyeK ? (MEQ_POTASIO_POR_BASE * factor).toFixed(1) : "0",
+    glucosaTotal: calcularGramosGlucosa(total24h, porcentajeGlucosa).toFixed(1)
   };
   mostrarSolucionRecomendada(solucion, condiciones);
   return solucion;
@@ -332,6 +340,7 @@ function mostrarSolucionRecomendada(solucion, condiciones) {
           <ul class="text-sm space-y-1">
             <li><span class="font-medium">Sodio:</span> ${solucion.sodioTotal} mEq/24h (${solucion.naPorLitro} mEq/L)</li>
             <li><span class="font-medium">Potasio:</span> ${solucion.potasioTotal} mEq/24h</li>
+            <li><span class="font-medium">Glucosa:</span> SG ${solucion.porcentajeGlucosa}% (${solucion.glucosaTotal} g/24h)</li>
             <li><span class="font-medium">Velocidad:</span> ${(solucion.volumen / 24).toFixed(1)} mL/h</li>
           </ul>
         </div>
@@ -463,8 +472,8 @@ function copiarIndicaciones() {
   
   const solucionElem = document.querySelector("#solucionRecomendadaDetalle .solution-card");
   const solucionNombre = solucionElem.querySelector("h4").textContent;
-  const composicion = Array.from(solucionElem.querySelectorAll("ul:first-of-type li")).map(li => li.textContent).join('\n   • ');
-  const velocidad = `Velocidad de infusión: ${document.getElementById("flujoHorarioResult").textContent} mL/h`;
+  const composicion = Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(1) li")).map(li => li.textContent).join('\n   • ');
+  const aporteEstimado = Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(2) li")).map(li => li.textContent).join('\n   • ');
   
   const textoACopiar = `INDICACIÓN DE HIDRATACIÓN PARENTERAL - PEDIATRÍA\n\n` +
                      `DATOS DEL PACIENTE\n` +
@@ -481,7 +490,7 @@ function copiarIndicaciones() {
                      `SOLUCIÓN RECOMENDADA\n` +
                      `• ${solucionNombre}\n` +
                      `• Composición:\n   • ${composicion}\n` +
-                     `   • ${velocidad}\n\n` +
+                     `• Aporte estimado:\n   • ${aporteEstimado}\n\n` +
                      
                      `OBSERVACIONES\n` +
                      `• Monitorizar electrolitos séricos (Na, K) cada 24h inicialmente\n` +
@@ -642,4 +651,3 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
 });
-
