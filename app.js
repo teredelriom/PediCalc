@@ -217,6 +217,24 @@ function toggleTemperaturas() {
   if (tempAmbiente) tempAmbiente.classList.toggle("hidden", !condiciones.includes("ambienteCalido"));
 }
 
+function validarTemperaturas(condiciones) {
+  const campos = [
+    { condicion: "fiebre", id: "tempF", corporal: true, etiqueta: "Temperatura corporal" },
+    { condicion: "ambienteCalido", id: "tempA", corporal: false, etiqueta: "Temperatura ambiental" }
+  ];
+
+  for (const campo of campos) {
+    if (!condiciones.includes(campo.condicion)) continue;
+    const valor = parseFloat(document.getElementById(campo.id)?.value);
+    const validacion = validateTemperature(valor, campo.corporal);
+    if (!validacion.valid) {
+      showError(campo.id, `${campo.etiqueta}: ${validacion.message}`);
+      return false;
+    }
+  }
+  return true;
+}
+
 function getSelectedSolutionPercentage() {
   const selected = document.querySelector('input[name="solucionBase"]:checked');
   return selected ? parseInt(selected.value) : 5;
@@ -602,6 +620,7 @@ function calcular() {
   const pesoKg = peso / 1000;
   const deficitPct = parseFloat(document.getElementById("deshidratacion").value);
   const condiciones = obtenerCondicionesSeleccionadas();
+  if (!validarTemperaturas(condiciones)) return;
   
   const categoria = obtenerCategoriaAporte(deficitPct, condiciones);
   const aporte = ClinicalMath.calcularAporteDiario(pesoKg, categoria, APORTE_RANGOS);
@@ -814,10 +833,6 @@ function loadFormData() {
 
 // Inicialización de Eventos DOM
 document.addEventListener("DOMContentLoaded", () => {
-  function setBtnDisabled(isDisabled) {
-    document.getElementById("btnCalcular").disabled = isDisabled;
-  }
-
   function attachValidation(id, validateFn) {
     const element = document.getElementById(id);
     if (!element) return;
@@ -826,7 +841,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const validation = validateFn(parseFloat(this.value));
       if (!validation.valid) showError(id, validation.message);
       else clearError(id);
-      setBtnDisabled(!validation.valid);
     });
   }
 
@@ -834,6 +848,8 @@ document.addEventListener("DOMContentLoaded", () => {
   attachValidation("talla", validateHeight);
   attachValidation("creatinina", validateCreatinine);
   attachValidation("edadGestacional", validateGestationalAge);
+  attachValidation("tempF", value => validateTemperature(value, true));
+  attachValidation("tempA", value => validateTemperature(value, false));
 
   function updateAgeValidation() {
     let val = parseFloat(document.getElementById("edad").value);
@@ -843,7 +859,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const validation = validateAge(val);
     if (!validation.valid) showError("edad", validation.message);
     else clearError("edad");
-    setBtnDisabled(!validation.valid);
   }
 
   document.getElementById("edad").addEventListener("input", updateAgeValidation);

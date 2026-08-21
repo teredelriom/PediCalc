@@ -73,14 +73,11 @@
             <input type="number" id="peso" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 8500" required>
             <span class="unit">g</span>
           </div>
-          <p class="info-text">Ingrese peso en gramos (ej. 8500 para 8kg 500g)</p>
-          <p id="peso-error" class="text-red-500 text-xs mt-1 hidden"></p>
-          <p class="info-text">Ingrese peso en gramos (ej. 8500)</p>
-          <p id="peso-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p class="info-text">Ingrese peso en gramos (ej. 8500 para 8 kg 500 g)</p>
+          <p id="peso-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
         
         <div>
-          <label for="edad" class="block text-sm font-medium text-primary mb-1">Edad</label>
           <label for="edad" class="block text-sm font-medium text-primary mb-1">Edad Cronológica</label>
           <div class="input-with-unit">
             <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0">
@@ -89,10 +86,8 @@
               <option value="años">años</option>
             </select>
           </div>
-          <p class="info-text">Ingrese edad (ej. 6 meses; 2 años)</p>
-          <p id="edad-error" class="text-red-500 text-xs mt-1 hidden"></p>
-          <p class="info-text">Ingrese edad (ej. 6 meses)</p>
-          <p id="edad-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p class="info-text">Ingrese edad (ej. 6 meses o 2 años)</p>
+          <p id="edad-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
         
         <div>
@@ -102,7 +97,7 @@
             <span class="unit">sem</span>
           </div>
           <p class="info-text">Opcional. Fundamental si el paciente tiene < 6 meses.</p>
-          <p id="edadGestacional-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p id="edadGestacional-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
 
         <div>
@@ -112,7 +107,7 @@
             <span class="unit">cm</span>
           </div>
           <p class="info-text">Opcional. Requerida para cálculo de TFG (Schwartz).</p>
-          <p id="talla-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p id="talla-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
 
         <div>
@@ -122,7 +117,7 @@
             <span class="unit">mg/dL</span>
           </div>
           <p class="info-text">Opcional. Para estimar función renal.</p>
-          <p id="creatinina-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p id="creatinina-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
       </div>
 
@@ -197,7 +192,7 @@
           <input type="number" id="tempF" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 38.5" step="0.1" min="35" max="42">
           <span class="unit">°C</span>
         </div>
-        <p id="tempF-error" class="text-red-500 text-xs mt-1 hidden"></p>
+        <p id="tempF-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
       </div>
       
       <div id="tempAmbiente" class="hidden">
@@ -206,7 +201,7 @@
           <input type="number" id="tempA" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 33" step="0.1" min="20" max="50">
           <span class="unit">°C</span>
         </div>
-        <p id="tempA-error" class="text-red-500 text-xs mt-1 hidden"></p>
+        <p id="tempA-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
       </div>
 
       <div>
@@ -317,7 +312,6 @@
           <i class="fas fa-chart-bar mr-2"></i>Resultados Calculados
         </h2>
         
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <div class="result-card">
             <h3 class="text-sm text-primary mb-1">Mantenimiento</h3>

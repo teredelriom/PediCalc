@@ -381,7 +381,7 @@ h1:after {
   
   /* Hide the input form, buttons, and offline status */
   #input-form,
-  .actions-row,
+  #actions-row,
   .btn-install,
   .offline-status {
     display: none !important;
@@ -424,4 +424,3 @@ h1:after {
     border: 1px solid #ddd;
   }
 }
-
