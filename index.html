@@ -358,7 +358,7 @@
     <div class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label class="block text-sm font-medium text-[#3FB8AF] mb-1">Peso</label>
+          <label for="peso" class="block text-sm font-medium text-[#3FB8AF] mb-1">Peso</label>
           <div class="input-with-unit">
             <input type="number" id="peso" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 8500" required>
             <span class="unit">g</span>
@@ -368,7 +368,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium text-[#3FB8AF] mb-1">Edad</label>
+          <label for="edad" class="block text-sm font-medium text-[#3FB8AF] mb-1">Edad</label>
           <div class="input-with-unit">
             <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0">
             <select id="unidadEdad" class="unit focus:outline-none cursor-pointer">
@@ -382,7 +382,7 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-[#3FB8AF] mb-1">Grado de deshidratación</label>
+        <label for="deshidratacion" class="block text-sm font-medium text-[#3FB8AF] mb-1">Grado de deshidratación</label>
         <select id="deshidratacion" class="w-full input-highlight p-3 border border-gray-300 rounded-lg">
           <option value="0">Sin deshidratación</option>
           <option value="50">Leve (3-5%)</option>
@@ -393,7 +393,7 @@
 
       <!-- Sección de condiciones clínicas -->
       <div>
-        <label class="block text-sm font-medium text-[#3FB8AF] mb-2">Condiciones clínicas</label>
+        <span class="block text-sm font-medium text-[#3FB8AF] mb-2">Condiciones clínicas</span>
         <div id="checkboxes" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:border-[#3FB8AF]">
             <input type="checkbox" id="fiebre" name="condiciones" value="fiebre" class="h-4 w-4 text-[#3FB8AF] focus:ring-[#3FB8AF] border-gray-300 rounded">
@@ -447,7 +447,7 @@
       </div>
 
       <div id="tempFiebre" class="hidden">
-        <label class="block text-sm font-medium text-[#3FB8AF] mb-1">Temperatura corporal</label>
+        <label for="tempF" class="block text-sm font-medium text-[#3FB8AF] mb-1">Temperatura corporal</label>
         <div class="input-with-unit">
           <input type="number" id="tempF" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 38.5" step="0.1" min="35" max="42">
           <span class="unit">°C</span>
@@ -456,7 +456,7 @@
       </div>
       
       <div id="tempAmbiente" class="hidden">
-        <label class="block text-sm font-medium text-[#3FB8AF] mb-1">Temperatura ambiental</label>
+        <label for="tempA" class="block text-sm font-medium text-[#3FB8AF] mb-1">Temperatura ambiental</label>
         <div class="input-with-unit">
           <input type="number" id="tempA" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 33" step="0.1" min="20" max="50">
           <span class="unit">°C</span>
@@ -465,7 +465,7 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-[#3FB8AF] mb-2">Electrolitos basales (opcional)</label>
+        <span class="block text-sm font-medium text-[#3FB8AF] mb-2">Electrolitos basales (opcional)</span>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="input-with-unit">
             <input type="number" id="naBasal" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Na" step="0.1" min="100" max="200">
@@ -484,7 +484,7 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-[#3FB8AF] mb-2">Solución base</label>
+        <span class="block text-sm font-medium text-[#3FB8AF] mb-2">Solución base</span>
         <div class="solution-selector" id="solucionSelector">
           <label class="flex items-center p-2 border border-gray-200 rounded-lg hover:border-[#3FB8AF]">
             <input type="radio" name="solucionBase" value="5" checked class="h-4 w-4 text-[#3FB8AF] focus:ring-[#3FB8AF] border-gray-300">
@@ -923,7 +923,10 @@
     }
 
     function calcularSolucionRecomendada(total24h, preparacion, condiciones) {
-      const factor = total24h / 500;
+      const VOLUMEN_BASE_PREPARACION = 500; // cc
+      const MEQ_POTASIO_POR_BASE = 10.05; // 7.5 cc de KCl 10% (1.34 mEq/cc) = 10.05 mEq por cada 500 cc
+      
+      const factor = total24h / VOLUMEN_BASE_PREPARACION;
       const componentesEscalados = preparacion.componentes.map(item => {
         const match = item.match(/^(.*?)(\d+(?:[,.]\d+)?)\s*(cc|ml)/i);
         if (!match) return item;
@@ -934,8 +937,8 @@
         ...preparacion,
         volumen: Math.round(total24h),
         componentesEscalados,
-        sodioTotal: (preparacion.naPorLitro * total24h / 1000).toFixed(1),
-        potasioTotal: preparacion.incluyeK ? (20.1 * factor).toFixed(1) : "0"
+        sodioTotal: (preparacion.naPorLitro * (total24h / 1000)).toFixed(1),
+        potasioTotal: preparacion.incluyeK ? (MEQ_POTASIO_POR_BASE * factor).toFixed(1) : "0"
       };
       mostrarSolucionRecomendada(solucion, condiciones);
       return solucion;
@@ -965,7 +968,7 @@
         </div>`;
     }
 
-    function mostrarSolucionesAlternativas() {}
+
 
     function calcularRequerimientosElectrolitos(pesoKg) {
       return {
@@ -1159,70 +1162,9 @@
     }
 
     // Funciones auxiliares
-    function calcularMantenimiento(pesoKg) {
-      if (pesoKg <= 10) return pesoKg * 100;
-      if (pesoKg <= 20) return 1000 + (pesoKg - 10) * 50;
-      return 1500 + (pesoKg - 20) * 20;
-    }
-
     function obtenerCondicionesSeleccionadas() {
       return Array.from(document.querySelectorAll('#checkboxes input[type="checkbox"]:checked'))
              .map(cb => cb.value);
-    }
-
-    function mostrarFormulaHollidaySegarLegacy(pesoKg, mantenimiento, sodioReq, potasioReq, glucosaReq) {
-      const container = document.getElementById("hollidayOriginal");
-      
-      let formula = "";
-      if (pesoKg <= 10) {
-        formula = `${pesoKg.toFixed(2)} kg × 100 mL/kg/día = ${(pesoKg*100).toFixed(0)} mL/día`;
-      } else if (pesoKg <= 20) {
-        formula = `Primeros 10kg: 1000 mL + ${(pesoKg-10).toFixed(2)} kg × 50 mL/kg/día = ${mantenimiento.toFixed(0)} mL/día`;
-      } else {
-        formula = `Primeros 10kg: 1000 mL + Siguientes 10kg: 500 mL + ${(pesoKg-20).toFixed(2)} kg × 20 mL/kg/día = ${mantenimiento.toFixed(0)} mL/día`;
-      }
-      
-      container.innerHTML = `
-        <p class="font-medium mb-2">Mantenimiento base:</p>
-        <p class="text-sm bg-white p-2 rounded border border-[#DAD8A7] mb-4">${formula}</p>
-        
-        <p class="font-medium mb-2">Requerimientos diarios:</p>
-        <ul class="text-sm space-y-1 list-disc pl-5">
-          <li>Líquidos: ${Math.round(mantenimiento)} mL</li>
-          <li>Calorías: ${Math.round(mantenimiento)} kcal</li>
-          <li>Sodio: ${sodioReq.toFixed(1)} mEq (≈ ${Math.round(sodioReq * 58.44)} mg NaCl)</li>
-          <li>Potasio: ${potasioReq.toFixed(1)} mEq (≈ ${Math.round(potasioReq * 74.55)} mg KCl)</li>
-          <li>Glucosa: ${glucosaReq.toFixed(1)} g</li>
-        </ul>
-      `;
-    }
-
-    // Requerimientos según fórmula de Holliday-Segar incluyendo Cloro
-    function calcularRequerimientosBasales(peso) {
-      let calorias = 0;
-
-      if (peso <= 10) {
-        calorias = peso * 100;
-      } else if (peso <= 20) {
-        calorias = 1000 + (peso - 10) * 50;
-      } else {
-        calorias = 1500 + (peso - 20) * 20;
-      }
-
-      const agua = Math.round(calorias); // 1 cc por cal = 1 mL
-      const sodio = Math.round(calorias * 0.03);   // 3 mEq/100 cal
-      const potasio = Math.round(calorias * 0.025); // 2.5 mEq/100 cal
-      const cloro = Math.round(calorias * 0.05);    // 5 mEq/100 cal
-
-      const caloriasTotales = Math.round(calorias);
-
-      return {
-        agua: Math.round(agua),
-        calorias: caloriasTotales,
-        sodio: Math.round(sodio),
-        potasio: Math.round(potasio),
-        cloro: Math.round(cloro)
-      };
     }
 
     // Online/offline detection
