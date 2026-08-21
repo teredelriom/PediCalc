@@ -16,6 +16,24 @@ const APORTE_RANGOS = {
   severa: { kg: [250, 270], m2: [3500, 4000], label: "Deshidratación severa" }
 };
 
+const MACRONUTRIENTES_NPT = {
+  carbohidratos: { min: 50, max: 55, kcalG: 3.4, maxGlucosaMin: 12.5 },
+  proteinas: { min: 10, max: 15, kcalG: 4.0, prematurosRango: [1.5, 4.0] },
+  lipidos: { min: 30, max: 35, kcalG: 9.5, maxTrigliceridos: 400 },
+  oligoelementos: { basal: [0.2, 0.3], colestasis: 0.1, topeMl: 5.0 }
+};
+
+const SOLUCIONES_ELECTROLITICAS = {
+  cloruroSodio17_7: { meqMl: 3.4 }, // Concentrado
+  cloruroSodio10: { meqMl: 1.71 },
+  salina0_9: { meq100cc: 15.4 },
+  hipertonica3: { meq100cc: 51.3 },
+  hipotonica0_45: { meq100cc: 7.7 },
+  cloruroPotasio10: { meqMl: 1.34 },
+  gluconatoCalcio10: { mgElementalMl: 9.0, meqMl: 0.465 },
+  sulfatoMagnesio25: { mgMl: 100, meqMl: 0.81 }
+};
+
 const NUTRICION_LACTANTES = [
   { alimento: "Nan 14%", calorias: "73", proteinas: "1,3", hdc: "8,1", lipidos: "3,9" },
   { alimento: "FL 7,5%", calorias: "72", proteinas: "2,2", hdc: "9,1", lipidos: "3" },
@@ -269,6 +287,55 @@ const ClinicalMath = {
   }
 };
 
+Object.assign(ClinicalMath, {
+  superficieCorporalExacta: function(pesoKg) {
+    if (pesoKg < 3 || pesoKg > 8) return ((pesoKg * 4) + 7) / (90 + pesoKg);
+    return null;
+  },
+  concentracionColoide: function(gramosTotales, volumenTotal) {
+    return (gramosTotales * 100) / volumenTotal;
+  },
+  calculoAlbumina: function(volumenCalculado) {
+    return (volumenCalculado / 100) * 5;
+  },
+  correccionHiponatremia: function(pesoKg, naIdeal, naReal) {
+    return pesoKg * 0.6 * (naIdeal - naReal);
+  },
+  aguaLibreHipernatremia: function(pesoKg, naReal, naIdeal) {
+    return pesoKg * 0.6 * ((naReal / naIdeal) - 1);
+  },
+  calcioCorregido: function(caSerico, albumina) {
+    return caSerico - albumina + 4;
+  },
+  anionGap: function(na, k, hco3, cl) {
+    return (na + k) - (hco3 + cl);
+  },
+  anionGapUrinario: function(naUr, kUr, clUr) {
+    return naUr + kUr - clUr;
+  },
+  osmolaridadEfectiva: function(na, k, glucemia) {
+    return 2 * (na + k) + (glucemia / 18);
+  },
+  correccionBicarbonato: function(eb, pesoKg) {
+    return eb * 0.3 * pesoKg;
+  },
+  sodioCorregidoCAD: function(na, glucemia) {
+    return na + 0.016 * (glucemia - 100);
+  },
+  insulinaNPHTransicion: function(mlInfusion24h) {
+    return mlInfusion24h / 10;
+  },
+  capacidadGastricaNeonatal: function(pesoGramos) {
+    return Math.floor(pesoGramos / 100) - 3;
+  },
+  esquemaParkland: function(pesoKg, scqPct) {
+    return 4 * pesoKg * scqPct;
+  },
+  esquemaGalveston: function(sc, scqPct) {
+    return 5000 * sc * (scqPct / 100);
+  }
+});
+
 function obtenerCategoriaAporte(deficitPct, condiciones) {
   if (deficitPct >= 100) return "severa";
   if (deficitPct >= 75) return "moderada";
@@ -285,7 +352,62 @@ function seleccionarPreparacion(condiciones, edadMeses, categoria) {
   return PREPARACIONES.sodio35;
 }
 
-function calcularSolucionRecomendada(total24h, preparacion) {
+function procesarNPT(pesoKg) {
+  const checkboxNpt = document.getElementById("activarNPT");
+  if (!checkboxNpt || !checkboxNpt.checked || isNaN(pesoKg)) return;
+
+  const prot = parseFloat(document.getElementById("nptProteinas").value) || 2.0;
+  const lip = parseFloat(document.getElementById("nptLipidos").value) || 1.0;
+  const vig = parseFloat(document.getElementById("nptVig").value) || 5.0;
+
+  // Calculos de macronutrientes
+  const gramosProt = pesoKg * prot;
+  const caloriasProt = gramosProt * MACRONUTRIENTES_NPT.proteinas.kcalG;
+
+  const gramosLip = pesoKg * lip;
+  const caloriasLip = gramosLip * MACRONUTRIENTES_NPT.lipidos.kcalG;
+
+  // Glucosa a partir de VIG (mg/kg/min -> gramos/día)
+  // gramos = (VIG * peso * 1440) / 1000
+  const gramosGluc = (vig * pesoKg * 1440) / 1000;
+  const caloriasGluc = gramosGluc * MACRONUTRIENTES_NPT.carbohidratos.kcalG;
+
+  const caloriasTotales = caloriasProt + caloriasLip + caloriasGluc;
+  const pctProt = (caloriasProt / caloriasTotales) * 100;
+  const pctLip = (caloriasLip / caloriasTotales) * 100;
+  const pctGluc = (caloriasGluc / caloriasTotales) * 100;
+
+  let alertas = "";
+  if (pctProt < MACRONUTRIENTES_NPT.proteinas.min || pctProt > MACRONUTRIENTES_NPT.proteinas.max) {
+    alertas += `<li>Proteínas (${pctProt.toFixed(1)}%) fuera de rango óptimo (${MACRONUTRIENTES_NPT.proteinas.min}-${MACRONUTRIENTES_NPT.proteinas.max}%).</li>`;
+  }
+  if (pctLip < MACRONUTRIENTES_NPT.lipidos.min || pctLip > MACRONUTRIENTES_NPT.lipidos.max) {
+    alertas += `<li>Lípidos (${pctLip.toFixed(1)}%) fuera de rango óptimo (${MACRONUTRIENTES_NPT.lipidos.min}-${MACRONUTRIENTES_NPT.lipidos.max}%).</li>`;
+  }
+  if (pctGluc < MACRONUTRIENTES_NPT.carbohidratos.min || pctGluc > MACRONUTRIENTES_NPT.carbohidratos.max) {
+    alertas += `<li>Carbohidratos (${pctGluc.toFixed(1)}%) fuera de rango óptimo (${MACRONUTRIENTES_NPT.carbohidratos.min}-${MACRONUTRIENTES_NPT.carbohidratos.max}%).</li>`;
+  }
+
+  const nptHtml = `
+    <strong>Cálculo de NPT (Basado en ${pesoKg.toFixed(2)} kg):</strong><br>
+    <ul class="list-disc pl-5 mt-2">
+      <li><strong>Proteínas (${prot.toFixed(1)} g/kg/d):</strong> ${gramosProt.toFixed(1)} g/día (${caloriasProt.toFixed(0)} kcal = ${pctProt.toFixed(1)}%)</li>
+      <li><strong>Lípidos (${lip.toFixed(1)} g/kg/d):</strong> ${gramosLip.toFixed(1)} g/día (${caloriasLip.toFixed(0)} kcal = ${pctLip.toFixed(1)}%)</li>
+      <li><strong>Glucosa (VIG ${vig.toFixed(1)}):</strong> ${gramosGluc.toFixed(1)} g/día (${caloriasGluc.toFixed(0)} kcal = ${pctGluc.toFixed(1)}%)</li>
+    </ul>
+    <div class="mt-2 text-primary font-bold border-t border-primary/20 pt-2">
+      Calorías Totales: ${caloriasTotales.toFixed(0)} kcal/día (${(caloriasTotales/pesoKg).toFixed(0)} kcal/kg/día)
+    </div>
+    ${alertas ? `<ul class="text-danger mt-2 text-xs list-disc pl-5">${alertas}</ul>` : ''}
+  `;
+
+  const nptDiv = document.createElement("div");
+  nptDiv.className = `clinical-note success p-3 rounded-md mb-2`;
+  nptDiv.innerHTML = `<p class="text-sm">${nptHtml}</p>`;
+  document.getElementById("notasClinicas").appendChild(nptDiv);
+}
+
+function calcularSolucionRecomendada(total24h, preparacion, condiciones) {
   const VOLUMEN_BASE_PREPARACION = 500; 
   const MEQ_POTASIO_POR_BASE = 10.05; 
   const porcentajeGlucosa = getSelectedSolutionPercentage();
@@ -520,6 +642,56 @@ function calcular() {
   mostrarNutricionReferencia(edad);
   mostrarNotasClinicas(solucionOptima, edad, categoria, pesoKg);
   
+  // -- Procesar Analítica y Quemados --
+  const hco3 = parseFloat(document.getElementById("hco3Real")?.value);
+  const cl = parseFloat(document.getElementById("clBasal")?.value);
+  const naBasal = parseFloat(document.getElementById("naBasal")?.value);
+  const kBasal = parseFloat(document.getElementById("kBasal")?.value);
+  const glucemia = parseFloat(document.getElementById("glucemia")?.value);
+  const scq = parseFloat(document.getElementById("scq")?.value);
+  
+  if (!isNaN(pesoKg) && !isNaN(naBasal) && !isNaN(kBasal) && !isNaN(hco3) && !isNaN(cl)) {
+    const ag = ClinicalMath.anionGap(naBasal, kBasal, hco3, cl);
+    const agDiv = document.createElement("div");
+    agDiv.className = `clinical-note warning p-3 rounded-md mb-2`;
+    agDiv.innerHTML = `<p class="text-sm"><strong>Anion Gap calculado:</strong> ${ag.toFixed(1)} (Rango normal: 8-12)</p>`;
+    document.getElementById("notasClinicas").appendChild(agDiv);
+  }
+
+  if (!isNaN(naBasal) && !isNaN(glucemia)) {
+    const osmEfectiva = ClinicalMath.osmolaridadEfectiva(naBasal, (kBasal||0), glucemia);
+    const naCorregido = ClinicalMath.sodioCorregidoCAD(naBasal, glucemia);
+    const osmDiv = document.createElement("div");
+    osmDiv.className = `clinical-note warning p-3 rounded-md mb-2`;
+    osmDiv.innerHTML = `<p class="text-sm"><strong>Osmolaridad Efectiva:</strong> ${osmEfectiva.toFixed(1)} mOsm/kg | <strong>Na Corregido (CAD):</strong> ${naCorregido.toFixed(1)} mEq/L</p>`;
+    document.getElementById("notasClinicas").appendChild(osmDiv);
+  }
+
+  if (!isNaN(scq) && scq > 0) {
+    const scqLimitada = Math.min(scq, 50);
+    let volumenReanimacion = 0;
+    let esquemaUtilizado = "";
+    if (pesoKg < 10) {
+      volumenReanimacion = ClinicalMath.esquemaParkland(pesoKg, scqLimitada);
+      esquemaUtilizado = "Parkland (Día 1)";
+    } else if (pesoKg <= 30) {
+      const sc = ClinicalMath.superficieCorporalExacta(pesoKg);
+      if (sc) {
+        volumenReanimacion = ClinicalMath.esquemaGalveston(sc, scqLimitada);
+        esquemaUtilizado = "Galveston (Día 1)";
+      }
+    }
+    if (volumenReanimacion > 0) {
+      const qDiv = document.createElement("div");
+      qDiv.className = `clinical-note danger p-3 rounded-md mb-2`;
+      qDiv.innerHTML = `<p class="text-sm"><b>Reanimación Quemados (${esquemaUtilizado}):</b> Administrar ${volumenReanimacion.toFixed(0)} mL de Solución Hartman. Pasar 50% en las primeras 8h y 50% en las siguientes 16h. No usar KCl.</p>`;
+      document.getElementById("notasClinicas").appendChild(qDiv);
+    }
+  }
+
+  // -- Procesar Nutrición Parenteral (NPT) --
+  procesarNPT(pesoKg);
+
   document.getElementById("solucionesAlternativas").classList.add("hidden");
   document.getElementById("resultado").classList.remove("hidden");
   document.getElementById("resultado").scrollIntoView({ behavior: 'smooth' });
@@ -580,7 +752,23 @@ function saveFormData() {
     peso: document.getElementById('peso').value,
     edad: document.getElementById('edad').value,
     unidadEdad: document.getElementById('unidadEdad').value,
+    edadGestacional: document.getElementById('edadGestacional')?.value,
+    talla: document.getElementById('talla')?.value,
+    creatinina: document.getElementById('creatinina')?.value,
     deshidratacion: document.getElementById('deshidratacion').value,
+    tempF: document.getElementById('tempF')?.value,
+    tempA: document.getElementById('tempA')?.value,
+    naBasal: document.getElementById('naBasal')?.value,
+    kBasal: document.getElementById('kBasal')?.value,
+    clBasal: document.getElementById('clBasal')?.value,
+    hco3Real: document.getElementById('hco3Real')?.value,
+    excesoBase: document.getElementById('excesoBase')?.value,
+    glucemia: document.getElementById('glucemia')?.value,
+    albumina: document.getElementById('albumina')?.value,
+    scq: document.getElementById('scq')?.value,
+    nptProteinas: document.getElementById('nptProteinas')?.value,
+    nptLipidos: document.getElementById('nptLipidos')?.value,
+    nptVig: document.getElementById('nptVig')?.value,
     solucionBase: document.querySelector('input[name="solucionBase"]:checked')?.value,
     condiciones: obtenerCondicionesSeleccionadas()
   };
@@ -592,10 +780,18 @@ function loadFormData() {
     const saved = localStorage.getItem('pedicalc_formData');
     if (saved) {
       const data = JSON.parse(saved);
-      if(data.peso) document.getElementById('peso').value = data.peso;
-      if(data.edad) document.getElementById('edad').value = data.edad;
-      if(data.unidadEdad) document.getElementById('unidadEdad').value = data.unidadEdad;
-      if(data.deshidratacion) document.getElementById('deshidratacion').value = data.deshidratacion;
+      const fields = [
+        'peso', 'edad', 'unidadEdad', 'edadGestacional', 'talla', 'creatinina', 
+        'deshidratacion', 'tempF', 'tempA', 'naBasal', 'kBasal', 'clBasal', 
+        'hco3Real', 'excesoBase', 'glucemia', 'albumina', 'scq', 
+        'nptProteinas', 'nptLipidos', 'nptVig'
+      ];
+      fields.forEach(f => {
+        if(data[f]) {
+          const el = document.getElementById(f);
+          if (el) el.value = data[f];
+        }
+      });
       
       if(data.solucionBase) {
         const rb = document.querySelector(`input[name="solucionBase"][value="${data.solucionBase}"]`);
@@ -656,6 +852,15 @@ document.addEventListener("DOMContentLoaded", () => {
     checkbox.addEventListener('change', toggleTemperaturas);
   });
 
+  const btnNpt = document.getElementById("activarNPT");
+  if (btnNpt) {
+    btnNpt.addEventListener("change", function() {
+      const div = document.getElementById("nptInputs");
+      if (this.checked) div.classList.remove("hidden");
+      else div.classList.add("hidden");
+    });
+  }
+  
   document.querySelectorAll('input, select').forEach(el => {
     el.addEventListener('change', saveFormData);
     el.addEventListener('keyup', saveFormData);

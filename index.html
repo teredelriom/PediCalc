@@ -228,6 +228,29 @@
         <p class="info-text">Ingrese valores basales para ajustar cálculo de electrolitos</p>
       </div>
 
+      <!-- Sección de Nutrición Parenteral Total (NPT) -->
+      <div id="seccionNPT" class="mt-4 p-4 border border-secondary rounded-lg bg-gray-50 dark:bg-gray-800">
+        <label class="flex items-center cursor-pointer mb-3">
+          <input type="checkbox" id="activarNPT" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+          <span class="ml-2 block text-sm font-medium text-primary">Calcular Nutrición Parenteral Total (NPT)</span>
+        </label>
+        
+        <div id="nptInputs" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="input-with-unit">
+            <input type="number" id="nptProteinas" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Proteínas" step="0.1" min="0" max="5" value="2.0">
+            <span class="unit">g/kg/d</span>
+          </div>
+          <div class="input-with-unit">
+            <input type="number" id="nptLipidos" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Lípidos" step="0.1" min="0" max="4" value="1.0">
+            <span class="unit">g/kg/d</span>
+          </div>
+          <div class="input-with-unit">
+            <input type="number" id="nptVig" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="VIG" step="0.1" min="1" max="15" value="5.0">
+            <span class="unit">mg/kg/min</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Sección de Analítica y Equilibrio Ácido-Base -->
       <div>
         <span class="block text-sm font-medium text-primary mb-2 mt-4">Laboratorio y Gasometría (Opcional)</span>
@@ -260,6 +283,7 @@
         </div>
         <p class="info-text text-danger">El límite máximo considerado para cálculos volumétricos es 50%.</p>
       </div>
+
 
       <div>
         <span class="block text-sm font-medium text-primary mb-2">Solución base</span>
