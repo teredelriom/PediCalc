@@ -692,7 +692,6 @@ function calcular() {
   // -- Procesar Nutrición Parenteral (NPT) --
   procesarNPT(pesoKg);
 
-  document.getElementById("solucionesAlternativas").classList.add("hidden");
   document.getElementById("resultado").classList.remove("hidden");
   document.getElementById("resultado").scrollIntoView({ behavior: 'smooth' });
 }
