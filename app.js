@@ -96,15 +96,18 @@ function validateTemperature(temp, isBodyTemp = true) {
   return { valid: true };
 }
 
-// Improved error display function
 function showError(inputId, message) {
   const inputElement = document.getElementById(inputId);
   const errorElement = document.getElementById(`${inputId}-error`);
   
-  if (inputElement) inputElement.classList.add('border-red-500');
+  if (inputElement) {
+    inputElement.classList.add('border-danger', 'ring-1', 'ring-danger');
+    inputElement.classList.remove('border-gray-300');
+  }
   if (errorElement) {
     errorElement.textContent = message;
     errorElement.classList.remove('hidden');
+    errorElement.classList.add('text-danger', 'text-xs', 'mt-1', 'font-medium');
   }
 }
 
@@ -112,8 +115,13 @@ function clearError(inputId) {
   const inputElement = document.getElementById(inputId);
   const errorElement = document.getElementById(`${inputId}-error`);
   
-  if (inputElement) inputElement.classList.remove('border-red-500');
-  if (errorElement) errorElement.classList.add('hidden');
+  if (inputElement) {
+    inputElement.classList.remove('border-danger', 'ring-1', 'ring-danger');
+    inputElement.classList.add('border-gray-300');
+  }
+  if (errorElement) {
+    errorElement.classList.add('hidden');
+  }
 }
 
 // Function to toggle temperature input fields
@@ -130,17 +138,7 @@ function toggleTemperaturas() {
   if (tempAmbiente) tempAmbiente.classList.toggle("hidden", !condiciones.includes("ambienteCalido"));
 }
 
-// Function to update solution selector UI
-function updateSolutionSelectorUI() {
-  const soluciones = document.querySelectorAll('#solucionSelector label');
-  soluciones.forEach(sol => {
-    if (sol.querySelector('input').checked) {
-      sol.classList.add('solution-selected');
-    } else {
-      sol.classList.remove('solution-selected');
-    }
-  });
-}
+// CSS 'has-[:checked]' natively handles solution selector UI update now.
 
 // Function to get selected solution percentage
 function getSelectedSolutionPercentage() {
@@ -583,7 +581,7 @@ function loadFormData() {
       if(data.peso) document.getElementById('peso').dispatchEvent(new Event('input'));
       if(data.edad) document.getElementById('edad').dispatchEvent(new Event('input'));
       toggleTemperaturas();
-      updateSolutionSelectorUI();
+      // UI is updated via CSS
     }
   } catch(e) {
     console.error("Error loading saved data", e);
@@ -592,7 +590,6 @@ function loadFormData() {
 
 // Inicialización
 document.addEventListener("DOMContentLoaded", () => {
-  updateSolutionSelectorUI();
   
   document.getElementById("peso").addEventListener("input", function() {
     const validation = validateWeight(parseFloat(this.value));

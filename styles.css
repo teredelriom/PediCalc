@@ -32,44 +32,62 @@ body {
 }
 
 .solution-card.selected {
-  border-left-color: var(--color-danger);
-  background-color: rgba(255, 158, 157, 0.1);
+  border-left-color: var(--color-primary);
+  background-color: rgba(63, 184, 175, 0.1);
 }
 
 .input-highlight {
   transition: all 0.3s ease;
+  background-color: #fdfdfd;
 }
 
 .input-highlight:focus {
-  box-shadow: 0 0 0 3px rgba(63, 184, 175, 0.2);
+  box-shadow: 0 0 0 4px rgba(63, 184, 175, 0.15);
   border-color: var(--color-primary);
+  background-color: #ffffff;
+  outline: none;
 }
 
 .btn-primary {
-  background-color: var(--color-danger);
+  background: linear-gradient(135deg, var(--color-danger) 0%, #e83572 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(255, 61, 127, 0.3);
+  border: none;
+  transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
-  background-color: #e83572;
+  background: linear-gradient(135deg, #e83572 0%, #d02c65 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 61, 127, 0.4);
 }
 
 .btn-secondary {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(63, 184, 175, 0.3);
+  border: none;
+  transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-primary-dark);
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, #24756f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(63, 184, 175, 0.4);
 }
 
 .btn-tertiary {
-  background-color: var(--color-primary-light);
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(127, 199, 175, 0.3);
+  border: none;
+  transition: all 0.3s ease;
 }
 
 .btn-tertiary:hover {
-  background-color: #6fb39b;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(127, 199, 175, 0.4);
 }
 
 .clinical-note {
@@ -197,6 +215,13 @@ h1:after {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-gray);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.unit:hover {
+  background: #dfe3e7;
+  color: var(--color-dark);
 }
 
 .solution-selector {
@@ -221,7 +246,7 @@ h1:after {
 
 .solution-selector label:hover {
   border-color: var(--color-primary-light);
-  background-color: rgba(58, 134, 255, 0.05);
+  background-color: rgba(63, 184, 175, 0.05);
 }
 
 .solution-selector input[type="radio"] {
@@ -232,7 +257,7 @@ h1:after {
 }
 
 .solution-selected {
-  background-color: rgba(58, 134, 255, 0.1) !important;
+  background-color: rgba(63, 184, 175, 0.1) !important;
   border-color: var(--color-primary) !important;
 }
 
