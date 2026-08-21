@@ -1,5 +1,5 @@
 /* service-worker.js – PediCalc PWA */
-const CACHE_NAME = 'hydration-cache-v4';
+const CACHE_NAME = 'hydration-cache-v5';
 
 const ASSETS = [
   './',
@@ -64,6 +64,7 @@ self.addEventListener('fetch', (event) => {
 /* =====================================================
    Activate – purge outdated caches
    ===================================================== */
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) =>
       Promise.all(
