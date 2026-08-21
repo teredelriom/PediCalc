@@ -1,9 +1,11 @@
 /* service-worker.js – PediCalc PWA */
-const CACHE_NAME = 'hydration-cache-v3';
+const CACHE_NAME = 'hydration-cache-v4';
 
 const ASSETS = [
   './',
   './index.html',
+  './app.js',
+  './styles.css',
   './manifest.json',
   './favicon.ico',
   './icons/favicon-16x16.png',
@@ -31,9 +33,31 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return; // Skip non-GET
 
   event.respondWith(
-    caches.match(event.request).then((cached) =>
-      cached || fetch(event.request)
-    )
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(event.request).then((response) => {
+        const isSuccessfulSameOriginRequest =
+          response &&
+          response.ok &&
+          new URL(event.request.url).origin === self.location.origin;
+
+        if (isSuccessfulSameOriginRequest) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+
+        return response;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+
+        return Response.error();
+      });
+    })
   );
 });
 
