@@ -329,7 +329,6 @@ function seleccionarPreparacion(condiciones, edadMeses, categoria) {
 }
 
 function calcular() {
-  ['peso', 'edad', 'tempF', 'tempA'].forEach(id => clearError(id));
   ['peso', 'edad', 'edadGestacional', 'talla', 'creatinina', 'tempF', 'tempA'].forEach(id => clearError(id));
   
   const peso = parseFloat(document.getElementById("peso").value);
@@ -377,10 +376,8 @@ function calcular() {
   
   // Segregation of logic: math calculations via ClinicalMath
   const categoria = obtenerCategoriaAporte(deficitPct, condiciones);
-  const aporte = calcularAporteDiario(pesoKg, categoria);
   const aporte = ClinicalMath.calcularAporteDiario(pesoKg, categoria, APORTE_RANGOS);
   const total24h = aporte.total;
-  const mantenimiento = calcularAporteDiario(pesoKg, "mantenimiento").total;
   const mantenimiento = ClinicalMath.calcularAporteDiario(pesoKg, "mantenimiento", APORTE_RANGOS).total;
   const deficit = Math.max(total24h - mantenimiento, 0);
   const preparacion = seleccionarPreparacion(condiciones, edad, categoria);
@@ -407,19 +404,18 @@ function calcular() {
   const solucionOptima = calcularSolucionRecomendada(total24h, preparacion, condiciones);
   mostrarFormulaHollidaySegar(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
   mostrarNutricionReferencia(edad);
-  mostrarNotasClinicas(solucionOptima, condiciones, edad, categoria);
   mostrarNotasClinicas(solucionOptima, condiciones, edad, categoria, pesoKg);
-  document.getElementById("solucionesAlternativas").classList.add("hidden");
-  document.getElementById("resultado").classList.remove("hidden");
   
+  // Novedades de analítica, base y quemados
+  procesarVariablesAvanzadas(pesoKg);
+
   // Scroll to results for better UX on mobile
   document.getElementById("resultado").scrollIntoView({ behavior: 'smooth' });
-}
 
-function calcularSolucionRecomendada(total24h, preparacion, condiciones) {
-  const VOLUMEN_BASE_PREPARACION = 500; // cc
-  const MEQ_POTASIO_POR_BASE = 10.05; // 7.5 cc de KCl 10% (1.34 mEq/cc) = 10.05 mEq por cada 500 cc
-  const porcentajeGlucosa = getSelectedSolutionPercentage();
+function mostrarNotaClinica(texto, tipo) {
+  const container = document.getElementById("notasClinicas");
+  const noteDiv = document.createElement("div");
+  noteDiv.className = `clinical-note ${tipo} p-3 rounded-md mb-2`;
   
   const factor = total24h / VOLUMEN_BASE_PREPARACION;
   const componentesEscalados = preparacion.componentes.map(item => {
@@ -689,10 +685,10 @@ function saveFormData() {
     naBasal: document.getElementById('naBasal').value,
     kBasal: document.getElementById('kBasal').value,
     clBasal: document.getElementById('clBasal').value,
-    solucionBase: document.querySelector('input[name="solucionBase"]:checked')?.value,
-    condiciones: obtenerCondicionesSeleccionadas()
-  };
-  localStorage.setItem('pedicalc_formData', JSON.stringify(data));
+    hco3Real: document.getElementById('hco3Real')?.value,
+    excesoBase: document.getElementById('excesoBase')?.value,
+    glucemia: document.getElementById('glucemia')?.value,
+    albumina: document.getElementById('albumina')?.value,
 }
 
 function loadFormData() {
@@ -712,10 +708,10 @@ function loadFormData() {
       if(data.naBasal) document.getElementById('naBasal').value = data.naBasal;
       if(data.kBasal) document.getElementById('kBasal').value = data.kBasal;
       if(data.clBasal) document.getElementById('clBasal').value = data.clBasal;
-      
-      if(data.solucionBase) {
-        const rb = document.querySelector(`input[name="solucionBase"][value="${data.solucionBase}"]`);
-        if (rb) rb.checked = true;
+      if(data.hco3Real) document.getElementById('hco3Real').value = data.hco3Real;
+      if(data.excesoBase) document.getElementById('excesoBase').value = data.excesoBase;
+      if(data.glucemia) document.getElementById('glucemia').value = data.glucemia;
+      if(data.albumina) document.getElementById('albumina').value = data.albumina;
       }
       
       if(data.condiciones && Array.isArray(data.condiciones)) {
