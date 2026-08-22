@@ -44,11 +44,11 @@ window.ClinicalMath = {
   calcularAporteNeonatal(pesoKg, diasVida) {
     const pretermino = pesoKg <= 1.5;
     let mlKg = 0;
-    if (diasVida === 1) mlKg = pretermino ? 90 : 70; 
+    if (diasVida === 1) mlKg = pretermino ? 90 : 70;
     else if (diasVida === 2) mlKg = pretermino ? 110 : 90;
     else if (diasVida === 3) mlKg = pretermino ? 130 : 110;
     else if (diasVida === 4) mlKg = pretermino ? 150 : 130;
-    else mlKg = 155; 
+    else mlKg = 155;
     return {
       total: pesoKg * mlKg,
       rango: [mlKg - 10, mlKg + 10],
@@ -62,12 +62,12 @@ window.ClinicalMath = {
     if (diasVida <= 2) {
       return { na: [0, 0], k: [0, 0], ca: [50 * pesoKg, 100 * pesoKg], cl: [0,0], mg: [0,0], p: [0,0], restringido: true };
     }
-    return { 
-      na: [3 * pesoKg, 4 * pesoKg], 
-      k: [1 * pesoKg, 2 * pesoKg], 
+    return {
+      na: [3 * pesoKg, 4 * pesoKg],
+      k: [1 * pesoKg, 2 * pesoKg],
       cl: [3 * pesoKg, 4 * pesoKg],
-      ca: [50 * pesoKg, 100 * pesoKg], 
-      mg: [0.4 * pesoKg, 0.9 * pesoKg], 
+      ca: [50 * pesoKg, 100 * pesoKg],
+      mg: [0.4 * pesoKg, 0.9 * pesoKg],
       p: [15 * pesoKg, 50 * pesoKg],
       restringido: false
     };
@@ -76,3 +76,11 @@ window.ClinicalMath = {
     return (volumenMl * porcentajeGlucosa) / (pesoKg * 144);
   }
 };
+
+// Carga el módulo interactivo sin mezclar lógica de interfaz con las fórmulas puras.
+if (!document.querySelector('script[data-pedicalc-enhancements]')) {
+  const enhancementScript = document.createElement('script');
+  enhancementScript.src = 'clinical-enhancements.js';
+  enhancementScript.dataset.pedicalcEnhancements = 'true';
+  document.head.appendChild(enhancementScript);
+}
