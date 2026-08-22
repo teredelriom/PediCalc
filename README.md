@@ -9,6 +9,8 @@ Esta aplicación web permite calcular de manera precisa los requerimientos de hi
 - Recomendación automática de solución intravenosa óptima.
 - Comparación de soluciones alternativas.
 - Indicaciones completas para enfermería con instrucciones de preparación.
+- Panel de herramientas complementarias con cálculo neonatal por horas de vida, cargas de cristaloides/albúmina, planes de diarrea y correcciones de Na, K, bicarbonato y calcio cuando se ingresan los laboratorios necesarios.
+- Mensajes de seguridad que recuerdan la necesidad de validar cada resultado con el protocolo institucional y la monitorización clínica.
 - Exportación de resultados como imagen, impresión o copiar al portapapeles.
 - Interfaz adaptativa y moderna con Tailwind CSS.
 - Compatible con instalación como Aplicación Web Progresiva (PWA).
@@ -20,6 +22,12 @@ Esta aplicación web permite calcular de manera precisa los requerimientos de hi
 - 🌟 Font Awesome
 - 🖼️ html2canvas (exportar resultados)
 - 📲 PWA con manifest.json y sw.js
+
+### Arquitectura
+
+- `clinical-math.js` concentra las fórmulas puras (sin acceso al DOM), incluidas superficie corporal, Holliday-Segar, Schwartz y correcciones bioquímicas, para facilitar su auditoría clínica.
+- `app.js` se limita a validación, estado, selección de protocolos y presentación de resultados.
+- `sw.js` precachea los recursos de la aplicación y usa una estrategia *Stale-While-Revalidate*: entrega el recurso local de inmediato y actualiza la caché en segundo plano cuando hay conectividad.
 
 📁 Archivos esperados en el mismo directorio:
 - 📄 index.html (este archivo)
