@@ -2,7 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#3FB8AF"/>
   <meta name="description" content="PediCalc">
   <title>PediCalc</title>
@@ -58,8 +60,8 @@
       <i class="fas fa-download"></i>
     </button>
     
-    <header class="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
-      <h1 id="app-title" class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-dark tracking-tight m-0">
+    <header class="flex flex-wrap gap-4 items-center justify-between mb-8 pb-4 border-b border-gray-200">
+      <h1 id="app-title" class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-dark tracking-tight m-0">
         <i class="fas fa-calculator mr-2 text-primary"></i>PediCalc
       </h1>
       <button id="btnVolver" class="hidden btn-tertiary text-white text-sm font-bold py-2 px-4 rounded-lg flex items-center shadow transition-all hover:-translate-y-0.5" onclick="goHome()">
