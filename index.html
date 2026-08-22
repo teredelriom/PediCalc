@@ -60,13 +60,70 @@
       </button>
     </div>
     
-    <h1 class="text-3xl md:text-4xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-dark mb-8 tracking-tight">
-      <i class="fas fa-calculator mr-2 text-primary"></i>Calculadora de Hidratación Pediátrica
-    </h1>
-    
-    <!-- Formulario de entrada -->
-    <div id="input-form" class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <header class="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+      <h1 id="app-title" class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-dark tracking-tight m-0">
+        <i class="fas fa-calculator mr-2 text-primary"></i>PediCalc
+      </h1>
+      <button id="btnVolver" class="hidden btn-tertiary text-white text-sm font-bold py-2 px-4 rounded-lg flex items-center shadow transition-all hover:-translate-y-0.5" onclick="goHome()">
+        <i class="fas fa-arrow-left mr-2"></i> Inicio
+      </button>
+    </header>
+
+    <!-- VISTA INICIO (MENU PRINCIPAL) -->
+    <div id="view-home" class="grid grid-cols-1 md:grid-cols-2 gap-4 fade-in">
+      
+      <div class="home-card bg-white p-6 rounded-xl shadow-md border-t-4 border-primary cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onclick="openCalc('hidratacion')">
+        <div class="flex items-center mb-4">
+          <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary text-2xl mr-4">
+            <i class="fas fa-tint"></i>
+          </div>
+          <h3 class="text-xl font-bold text-primary-dark m-0">Balance Hídrico</h3>
+        </div>
+        <p class="text-gray-600 text-sm">Cálculo de líquidos basales (Holliday-Segar / SC), déficits por deshidratación y selección de soluciones.</p>
+      </div>
+
+      <div class="home-card bg-white p-6 rounded-xl shadow-md border-t-4 border-success cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onclick="openCalc('npt')">
+        <div class="flex items-center mb-4">
+          <div class="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center text-success text-2xl mr-4">
+            <i class="fas fa-flask"></i>
+          </div>
+          <h3 class="text-xl font-bold text-primary-dark m-0">Nutrición Parenteral</h3>
+        </div>
+        <p class="text-gray-600 text-sm">Cálculo calórico avanzado, VIG, y distribución de macronutrientes (proteínas y lípidos).</p>
+      </div>
+
+      <div class="home-card bg-white p-6 rounded-xl shadow-md border-t-4 border-danger cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onclick="openCalc('quemados')">
+        <div class="flex items-center mb-4">
+          <div class="w-12 h-12 bg-danger/10 rounded-full flex items-center justify-center text-danger text-2xl mr-4">
+            <i class="fas fa-fire-alt"></i>
+          </div>
+          <h3 class="text-xl font-bold text-primary-dark m-0">Manejo de Quemados</h3>
+        </div>
+        <p class="text-gray-600 text-sm">Triaje automático para reanimación de Parkland (< 10kg) y Galveston (≤ 30kg) según %SCQ.</p>
+      </div>
+
+      <div class="home-card bg-white p-6 rounded-xl shadow-md border-t-4 border-warning cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onclick="openCalc('laboratorio')">
+        <div class="flex items-center mb-4">
+          <div class="w-12 h-12 bg-warning/10 rounded-full flex items-center justify-center text-warning text-2xl mr-4">
+            <i class="fas fa-vial"></i>
+          </div>
+          <h3 class="text-xl font-bold text-primary-dark m-0">Lab y Correcciones</h3>
+        </div>
+        <p class="text-gray-600 text-sm">Anion Gap, Osmolaridad Efectiva, Na+ corregido y correcciones de gases venosos.</p>
+      </div>
+
+    </div>
+
+    <!-- VISTA CALCULADORA -->
+    <div id="view-calc" class="hidden fade-in">
+      <form id="input-form" class="space-y-6" onsubmit="event.preventDefault(); calcular();">
+      
+      <!-- DATOS DEL PACIENTE GLOBALES -->
+      <div id="patient-data" class="bg-white rounded-lg shadow-md p-6 border-t-4 border-primary">
+        <h3 class="text-lg font-bold text-primary mb-4 border-b pb-2">
+          <i class="fas fa-user-injured mr-2"></i> Datos del Paciente
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="peso" class="block text-sm font-medium text-primary mb-1">Peso</label>
           <div class="input-with-unit">
@@ -74,13 +131,10 @@
             <span class="unit">g</span>
           </div>
           <p class="info-text">Ingrese peso en gramos (ej. 8500 para 8kg 500g)</p>
-          <p id="peso-error" class="text-red-500 text-xs mt-1 hidden"></p>
-          <p class="info-text">Ingrese peso en gramos (ej. 8500)</p>
           <p id="peso-error" class="text-danger text-xs mt-1 hidden"></p>
         </div>
         
         <div>
-          <label for="edad" class="block text-sm font-medium text-primary mb-1">Edad</label>
           <label for="edad" class="block text-sm font-medium text-primary mb-1">Edad Cronológica</label>
           <div class="input-with-unit">
             <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0">
@@ -90,8 +144,6 @@
             </select>
           </div>
           <p class="info-text">Ingrese edad (ej. 6 meses; 2 años)</p>
-          <p id="edad-error" class="text-red-500 text-xs mt-1 hidden"></p>
-          <p class="info-text">Ingrese edad (ej. 6 meses)</p>
           <p id="edad-error" class="text-danger text-xs mt-1 hidden"></p>
         </div>
         
@@ -124,8 +176,11 @@
           <p class="info-text">Opcional. Para estimar función renal.</p>
           <p id="creatinina-error" class="text-danger text-xs mt-1 hidden"></p>
         </div>
-      </div>
+      </div> <!-- Fin grid paciente -->
+      </div> <!-- Fin #patient-data -->
 
+      <!-- SECCION: HIDRATACION -->
+      <div id="sec-hidratacion" class="calc-section hidden space-y-6">
       <div>
         <label for="deshidratacion" class="block text-sm font-medium text-primary mb-1">Grado de deshidratación</label>
         <select id="deshidratacion" class="w-full input-highlight p-3 border border-gray-300 rounded-lg">
@@ -209,82 +264,7 @@
         <p id="tempA-error" class="text-red-500 text-xs mt-1 hidden"></p>
       </div>
 
-      <div>
-        <span class="block text-sm font-medium text-primary mb-2">Electrolitos basales (opcional)</span>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="input-with-unit">
-            <input type="number" id="naBasal" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Na" step="0.1" min="100" max="200">
-            <span class="unit">mEq/L</span>
-          </div>
-          <div class="input-with-unit">
-            <input type="number" id="kBasal" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="K" step="0.1" min="1" max="10">
-            <span class="unit">mEq/L</span>
-          </div>
-          <div class="input-with-unit">
-            <input type="number" id="clBasal" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Cl" step="0.1" min="70" max="150">
-            <span class="unit">mEq/L</span>
-          </div>
-        </div>
-        <p class="info-text">Ingrese valores basales para ajustar cálculo de electrolitos</p>
-      </div>
-
-      <!-- Sección de Nutrición Parenteral Total (NPT) -->
-      <div id="seccionNPT" class="mt-4 p-4 border border-secondary rounded-lg bg-gray-50 dark:bg-gray-800">
-        <label class="flex items-center cursor-pointer mb-3">
-          <input type="checkbox" id="activarNPT" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
-          <span class="ml-2 block text-sm font-medium text-primary">Calcular Nutrición Parenteral Total (NPT)</span>
-        </label>
-        
-        <div id="nptInputs" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="input-with-unit">
-            <input type="number" id="nptProteinas" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Proteínas" step="0.1" min="0" max="5" value="2.0">
-            <span class="unit">g/kg/d</span>
-          </div>
-          <div class="input-with-unit">
-            <input type="number" id="nptLipidos" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Lípidos" step="0.1" min="0" max="4" value="1.0">
-            <span class="unit">g/kg/d</span>
-          </div>
-          <div class="input-with-unit">
-            <input type="number" id="nptVig" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="VIG" step="0.1" min="1" max="15" value="5.0">
-            <span class="unit">mg/kg/min</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sección de Analítica y Equilibrio Ácido-Base -->
-      <div>
-        <span class="block text-sm font-medium text-primary mb-2 mt-4">Laboratorio y Gasometría (Opcional)</span>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="input-with-unit">
-            <input type="number" id="hco3Real" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="HCO3" step="0.1">
-            <span class="unit">mEq/L</span>
-          </div>
-          <div class="input-with-unit">
-            <input type="number" id="excesoBase" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="EB" step="0.1">
-            <span class="unit">mmol/L</span>
-          </div>
-          <div class="input-with-unit">
-            <input type="number" id="glucemia" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Glucosa" step="1">
-            <span class="unit">mg/dL</span>
-          </div>
-          <div class="input-with-unit">
-            <input type="number" id="albumina" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Albúmina" step="0.1">
-            <span class="unit">g/dL</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sección de Manejo de Quemados -->
-      <div id="seccionQuemados" class="mt-4 p-4 border border-warning rounded-lg bg-warning/10">
-        <label for="scq" class="block text-sm font-medium text-danger mb-1">Superficie Corporal Quemada (SCQ)</label>
-        <div class="input-with-unit">
-          <input type="number" id="scq" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 15" step="0.1" max="50">
-          <span class="unit">%</span>
-        </div>
-        <p class="info-text text-danger">El límite máximo considerado para cálculos volumétricos es 50%.</p>
-      </div>
-
-
+      <!-- Solución base se queda en Hidratación -->
       <div>
         <span class="block text-sm font-medium text-primary mb-2">Solución base</span>
         <div class="solution-selector" id="solucionSelector">
@@ -302,89 +282,165 @@
           </label>
         </div>
       </div>
+      </div> <!-- Fin #sec-hidratacion -->
+
+      <!-- SECCION: LABORATORIO -->
+      <div id="sec-laboratorio" class="calc-section hidden space-y-6">
+        <div>
+          <span class="block text-sm font-medium text-primary mb-2">Electrolitos basales</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="input-with-unit">
+              <input type="number" id="naBasal" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Na" step="0.1" min="100" max="200">
+              <span class="unit">mEq/L</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="kBasal" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="K" step="0.1" min="1" max="10">
+              <span class="unit">mEq/L</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="clBasal" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Cl" step="0.1" min="70" max="150">
+              <span class="unit">mEq/L</span>
+            </div>
+          </div>
+          <p class="info-text">Ingrese valores basales para calcular Anion Gap y Osmolaridad</p>
+        </div>
+
+        <div>
+          <span class="block text-sm font-medium text-primary mb-2 mt-4">Gasometría y Analítica extra</span>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="input-with-unit">
+              <input type="number" id="hco3Real" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="HCO3" step="0.1">
+              <span class="unit">mEq/L</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="excesoBase" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="EB" step="0.1">
+              <span class="unit">mmol/L</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="glucemia" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Glucosa" step="1">
+              <span class="unit">mg/dL</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="albumina" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Albúmina" step="0.1">
+              <span class="unit">g/dL</span>
+            </div>
+          </div>
+        </div>
+      </div> <!-- Fin #sec-laboratorio -->
+
+      <!-- SECCION: QUEMADOS -->
+      <div id="sec-quemados" class="calc-section hidden space-y-6">
+        <div class="p-4 border border-warning rounded-lg bg-warning/10">
+          <label for="scq" class="block text-sm font-medium text-danger mb-1">Superficie Corporal Quemada (SCQ)</label>
+          <div class="input-with-unit">
+            <input type="number" id="scq" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 15" step="0.1" max="50">
+            <span class="unit">%</span>
+          </div>
+          <p class="info-text text-danger">El límite máximo considerado para cálculos volumétricos es 50%.</p>
+        </div>
+      </div> <!-- Fin #sec-quemados -->
+
+      <!-- SECCION: NPT -->
+      <div id="sec-npt" class="calc-section hidden space-y-6">
+        <div class="p-4 border border-secondary rounded-lg bg-gray-50 dark:bg-gray-800">
+          <span class="block text-sm font-medium text-primary mb-3">Parámetros de Nutrición Parenteral</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="input-with-unit">
+              <input type="number" id="nptProteinas" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Proteínas" step="0.1" min="0" max="5" value="2.0">
+              <span class="unit">g/kg/d</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="nptLipidos" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Lípidos" step="0.1" min="0" max="4" value="1.0">
+              <span class="unit">g/kg/d</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="nptVig" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="VIG" step="0.1" min="1" max="15" value="5.0">
+              <span class="unit">mg/kg/min</span>
+            </div>
+          </div>
+        </div>
+      </div> <!-- Fin #sec-npt -->
 
       <!-- Botón de cálculo -->
-      <button id="btnCalcular" onclick="calcular()" 
+      <button id="btnCalcular" type="submit"
         class="w-full btn-primary font-bold py-4 px-4 rounded-xl text-lg mb-4 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-        <i class="fas fa-calculator mr-2"></i> Calcular Hidratación
+        <i class="fas fa-calculator mr-2"></i> Calcular
       </button>
-    </div>
+    </form>
 
     <!-- Sección de resultados -->
     <div id="resultado" class="hidden mt-8 space-y-6 fade-in">
-      <div class="bg-success/10 rounded-lg p-6 border border-success">
-        <h2 class="text-xl font-bold text-primary mb-4">
-          <i class="fas fa-chart-bar mr-2"></i>Resultados Calculados
-        </h2>
-        
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <div class="result-card">
-            <h3 class="text-sm text-primary mb-1">Mantenimiento</h3>
-            <div class="result-value" id="mantenimientoResult">0</div>
-            <div class="result-unit">mL/24h</div>
+      
+      <div id="resultados-hidratacion" class="space-y-6">
+        <div class="bg-success/10 rounded-lg p-6 border border-success">
+          <h2 class="text-xl font-bold text-primary-dark mb-4 border-b border-success/30 pb-2">Requerimientos Hídricos</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 result-grid">
+            <div class="result-card">
+              <h3 class="text-sm text-primary mb-1">Mantenimiento</h3>
+              <div class="result-value" id="mantenimientoResult">0</div>
+              <div class="result-unit">mL/24h</div>
+            </div>
+            <div class="result-card">
+              <h3 class="text-sm text-primary mb-1">Déficit</h3>
+              <div class="result-value" id="deficitResult">0</div>
+              <div class="result-unit">mL</div>
+            </div>
+            <div class="result-card">
+              <h3 class="text-sm text-primary mb-1">Total 24h</h3>
+              <div class="result-value" id="total24hResult">0</div>
+              <div class="result-unit">mL</div>
+            </div>
+            <div class="result-card">
+              <h3 class="text-sm text-primary mb-1">Flujo horario</h3>
+              <div class="result-value" id="flujoHorarioResult">0</div>
+              <div class="result-unit">mL/h</div>
+            </div>
+            <div class="result-card hidden" id="gfrCard">
+              <h3 class="text-sm text-primary mb-1">TFG Estimada</h3>
+              <div class="result-value" id="gfrResult">0</div>
+              <div class="result-unit">mL/min/1.73m²</div>
+            </div>
           </div>
-          <div class="result-card">
-            <h3 class="text-sm text-primary mb-1">Déficit</h3>
-            <div class="result-value" id="deficitResult">0</div>
-            <div class="result-unit">mL</div>
-          </div>
-          <div class="result-card">
-            <h3 class="text-sm text-primary mb-1">Total 24h</h3>
-            <div class="result-value" id="total24hResult">0</div>
-            <div class="result-unit">mL</div>
-          </div>
-          <div class="result-card">
-            <h3 class="text-sm text-primary mb-1">Flujo horario</h3>
-            <div class="result-value" id="flujoHorarioResult">0</div>
-            <div class="result-unit">mL/h</div>
-          </div>
-          <div class="result-card hidden" id="gfrCard">
-            <h3 class="text-sm text-primary mb-1">TFG Estimada</h3>
-            <div class="result-value" id="gfrResult">0</div>
-            <div class="result-unit">mL/min/1.73m²</div>
+          <div class="mt-4 text-xs text-gray-500 italic border-t border-success/20 pt-2">
+            Ref: Holliday MA, Segar WE. The maintenance need for water in parenteral fluid therapy (1957).
+            <span id="schwartzRef" class="hidden"><br>Ref: Schwartz GJ, et al. New equations to estimate GFR in children with CKD (2009).</span>
           </div>
         </div>
-        <div class="mt-4 text-xs text-gray-500 italic border-t border-success/20 pt-2">
-          Ref: Holliday MA, Segar WE. The maintenance need for water in parenteral fluid therapy (1957).
-          <span id="schwartzRef" class="hidden"><br>Ref: Schwartz GJ, et al. New equations to estimate GFR in children with CKD (2009).</span>
-        </div>
-      </div>
 
-      <!-- Solución recomendada -->
-      <div id="solucionRecomendadaContainer" class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="bg-primary text-white p-4">
-          <h3 class="text-lg font-bold flex items-center">
-            <i class="fas fa-flask mr-2"></i> Solución Intravenosa Recomendada
+        <!-- Solución recomendada -->
+        <div id="solucionRecomendadaContainer" class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="bg-primary text-white p-4">
+            <h3 class="text-lg font-bold flex items-center">
+              <i class="fas fa-flask mr-2"></i> Solución Intravenosa Recomendada
+            </h3>
+          </div>
+          <div id="solucionRecomendadaDetalle" class="p-4">
+            <!-- Contenido generado dinámicamente -->
+          </div>
+        </div>
+
+        <!-- Fórmulas de aportes -->
+        <div class="bg-secondary/10 rounded-lg p-6 border border-secondary">
+          <h3 class="text-lg font-bold text-primary mb-3">
+            <i class="fas fa-calculator mr-2"></i> Desglose de Cálculo Analítico
           </h3>
+          <div id="desgloseAportesContainer" class="text-gray-700">
+            <!-- Contenido generado dinámicamente -->
+          </div>
         </div>
-        <div id="solucionRecomendadaDetalle" class="p-4">
-          <!-- Contenido generado dinámicamente -->
-        </div>
-      </div>
 
-
-      <!-- Fórmulas de aportes -->
-      <div class="bg-secondary/10 rounded-lg p-6 border border-secondary">
-        <h3 class="text-lg font-bold text-primary mb-3">
-          <i class="fas fa-calculator mr-2"></i> Desglose de Cálculo Analítico
-        </h3>
-        <div id="desgloseAportesContainer" class="text-gray-700">
-          <!-- Contenido generado dinámicamente -->
+        <!-- Nutrición -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <div class="bg-success text-white p-4">
+            <h3 class="text-lg font-bold flex items-center">
+              <i class="fas fa-utensils mr-2"></i> Nutrición pediátrica de referencia
+            </h3>
+          </div>
+          <div id="nutricionReferencia" class="p-4 text-sm space-y-4">
+            <!-- Contenido generado dinámicamente -->
+          </div>
         </div>
-      </div>
-
-      <!-- Nutrición -->
-      <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="bg-success text-white p-4">
-          <h3 class="text-lg font-bold flex items-center">
-            <i class="fas fa-utensils mr-2"></i> Nutrición pediátrica de referencia
-          </h3>
-        </div>
-        <div id="nutricionReferencia" class="p-4 text-sm space-y-4">
-          <!-- Contenido generado dinámicamente -->
-        </div>
-      </div>
+      </div> <!-- Fin resultados-hidratacion -->
 
       <!-- Notas clínicas -->
       <div id="notasClinicas" class="hidden space-y-3">

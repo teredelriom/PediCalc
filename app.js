@@ -88,6 +88,39 @@ const PREPARACIONES = {
     incluyeK: true
   }
 };
+// Enrutamiento de la aplicación (SPA)
+let currentView = 'home';
+
+function goHome() {
+  currentView = 'home';
+  document.getElementById('view-home').classList.remove('hidden');
+  document.getElementById('view-calc').classList.add('hidden');
+  document.getElementById('btnVolver').classList.add('hidden');
+  document.getElementById('resultado').classList.add('hidden');
+  document.getElementById('app-title').innerHTML = '<i class="fas fa-calculator mr-2 text-primary"></i>PediCalc';
+  localStorage.setItem('pedicalc_currentView', 'home');
+}
+
+function openCalc(calcType) {
+  currentView = calcType;
+  document.getElementById('view-home').classList.add('hidden');
+  document.getElementById('view-calc').classList.remove('hidden');
+  document.getElementById('btnVolver').classList.remove('hidden');
+  document.getElementById('resultado').classList.add('hidden');
+
+  document.querySelectorAll('.calc-section').forEach(el => el.classList.add('hidden'));
+  const section = document.getElementById(`sec-${calcType}`);
+  if (section) section.classList.remove('hidden');
+
+  const titles = {
+    'hidratacion': '<i class="fas fa-tint mr-2 text-primary"></i>Balance Hídrico',
+    'laboratorio': '<i class="fas fa-vial mr-2 text-warning"></i>Laboratorio y Correcciones',
+    'quemados': '<i class="fas fa-fire-alt mr-2 text-danger"></i>Manejo de Quemados',
+    'npt': '<i class="fas fa-flask mr-2 text-success"></i>Nutrición Parenteral'
+  };
+  document.getElementById('app-title').innerHTML = titles[calcType] || '<i class="fas fa-calculator mr-2 text-primary"></i>PediCalc';
+  localStorage.setItem('pedicalc_currentView', calcType);
+}
 
 // Registro de Service Worker para PWA
 if ('serviceWorker' in navigator) {
@@ -346,8 +379,7 @@ function seleccionarPreparacion(condiciones, edadMeses, categoria) {
 }
 
 function procesarNPT(pesoKg) {
-  const checkboxNpt = document.getElementById("activarNPT");
-  if (!checkboxNpt || !checkboxNpt.checked || isNaN(pesoKg)) return;
+  if (isNaN(pesoKg)) return;
 
   const prot = parseFloat(document.getElementById("nptProteinas").value) || 2.0;
   const lip = parseFloat(document.getElementById("nptLipidos").value) || 1.0;
@@ -631,59 +663,80 @@ function calcular() {
   const electrolitos = ClinicalMath.calcularRequerimientosElectrolitos(pesoKg);
   const solucionOptima = calcularSolucionRecomendada(total24h, preparacion);
   
-  mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
-  mostrarNutricionReferencia(edad);
-  mostrarNotasClinicas(solucionOptima, edad, categoria, pesoKg);
-  
-  // -- Procesar Analítica y Quemados --
-  const hco3 = parseFloat(document.getElementById("hco3Real")?.value);
-  const cl = parseFloat(document.getElementById("clBasal")?.value);
-  const naBasal = parseFloat(document.getElementById("naBasal")?.value);
-  const kBasal = parseFloat(document.getElementById("kBasal")?.value);
-  const glucemia = parseFloat(document.getElementById("glucemia")?.value);
-  const scq = parseFloat(document.getElementById("scq")?.value);
-  
-  if (!isNaN(pesoKg) && !isNaN(naBasal) && !isNaN(kBasal) && !isNaN(hco3) && !isNaN(cl)) {
-    const ag = ClinicalMath.anionGap(naBasal, kBasal, hco3, cl);
-    const agDiv = document.createElement("div");
-    agDiv.className = `clinical-note warning p-3 rounded-md mb-2`;
-    agDiv.innerHTML = `<p class="text-sm"><strong>Anion Gap calculado:</strong> ${ag.toFixed(1)} (Rango normal: 8-12)</p>`;
-    document.getElementById("notasClinicas").appendChild(agDiv);
-  }
+  // Limpiar notas y visibilidad base
+  document.getElementById("notasClinicas").innerHTML = "";
+  document.getElementById("notasClinicas").classList.add("hidden");
+  document.getElementById("resultados-hidratacion").classList.add("hidden");
 
-  if (!isNaN(naBasal) && !isNaN(glucemia)) {
-    const osmEfectiva = ClinicalMath.osmolaridadEfectiva(naBasal, (kBasal||0), glucemia);
-    const naCorregido = ClinicalMath.sodioCorregidoCAD(naBasal, glucemia);
-    const osmDiv = document.createElement("div");
-    osmDiv.className = `clinical-note warning p-3 rounded-md mb-2`;
-    osmDiv.innerHTML = `<p class="text-sm"><strong>Osmolaridad Efectiva:</strong> ${osmEfectiva.toFixed(1)} mOsm/kg | <strong>Na Corregido (CAD):</strong> ${naCorregido.toFixed(1)} mEq/L</p>`;
-    document.getElementById("notasClinicas").appendChild(osmDiv);
+  if (currentView === 'hidratacion') {
+    document.getElementById("resultados-hidratacion").classList.remove("hidden");
+    mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
+    mostrarNutricionReferencia(edad);
+    mostrarNotasClinicas(solucionOptima, edad, categoria, pesoKg);
   }
-
-  if (!isNaN(scq) && scq > 0) {
-    const scqLimitada = Math.min(scq, 50);
-    let volumenReanimacion = 0;
-    let esquemaUtilizado = "";
-    if (pesoKg < 10) {
-      volumenReanimacion = ClinicalMath.esquemaParkland(pesoKg, scqLimitada);
-      esquemaUtilizado = "Parkland (Día 1)";
-    } else if (pesoKg <= 30) {
-      const sc = ClinicalMath.superficieCorporalExacta(pesoKg);
-      if (sc) {
-        volumenReanimacion = ClinicalMath.esquemaGalveston(sc, scqLimitada);
-        esquemaUtilizado = "Galveston (Día 1)";
-      }
+  
+  // -- Procesar Analítica --
+  if (currentView === 'laboratorio') {
+    const hco3 = parseFloat(document.getElementById("hco3Real")?.value);
+    const cl = parseFloat(document.getElementById("clBasal")?.value);
+    const naBasal = parseFloat(document.getElementById("naBasal")?.value);
+    const kBasal = parseFloat(document.getElementById("kBasal")?.value);
+    const glucemia = parseFloat(document.getElementById("glucemia")?.value);
+    
+    if (!isNaN(pesoKg) && !isNaN(naBasal) && !isNaN(kBasal) && !isNaN(hco3) && !isNaN(cl)) {
+      const ag = ClinicalMath.anionGap(naBasal, kBasal, hco3, cl);
+      const agDiv = document.createElement("div");
+      agDiv.className = `clinical-note warning p-3 rounded-md mb-2`;
+      agDiv.innerHTML = `<p class="text-sm"><strong>Anion Gap calculado:</strong> ${ag.toFixed(1)} (Rango normal: 8-12)</p>`;
+      document.getElementById("notasClinicas").appendChild(agDiv);
+      document.getElementById("notasClinicas").classList.remove("hidden");
     }
-    if (volumenReanimacion > 0) {
-      const qDiv = document.createElement("div");
-      qDiv.className = `clinical-note danger p-3 rounded-md mb-2`;
-      qDiv.innerHTML = `<p class="text-sm"><b>Reanimación Quemados (${esquemaUtilizado}):</b> Administrar ${volumenReanimacion.toFixed(0)} mL de Solución Hartman. Pasar 50% en las primeras 8h y 50% en las siguientes 16h. No usar KCl.</p>`;
-      document.getElementById("notasClinicas").appendChild(qDiv);
+
+    if (!isNaN(naBasal) && !isNaN(glucemia)) {
+      const osmEfectiva = ClinicalMath.osmolaridadEfectiva(naBasal, (kBasal||0), glucemia);
+      const naCorregido = ClinicalMath.sodioCorregidoCAD(naBasal, glucemia);
+      const osmDiv = document.createElement("div");
+      osmDiv.className = `clinical-note warning p-3 rounded-md mb-2`;
+      osmDiv.innerHTML = `<p class="text-sm"><strong>Osmolaridad Efectiva:</strong> ${osmEfectiva.toFixed(1)} mOsm/kg | <strong>Na Corregido (CAD):</strong> ${naCorregido.toFixed(1)} mEq/L</p>`;
+      document.getElementById("notasClinicas").appendChild(osmDiv);
+      document.getElementById("notasClinicas").classList.remove("hidden");
+    }
+  }
+
+  // -- Procesar Quemados --
+  if (currentView === 'quemados') {
+    const scq = parseFloat(document.getElementById("scq")?.value);
+    if (!isNaN(scq) && scq > 0) {
+      const scqLimitada = Math.min(scq, 50);
+      let volumenReanimacion = 0;
+      let esquemaUtilizado = "";
+      if (pesoKg < 10) {
+        volumenReanimacion = ClinicalMath.esquemaParkland(pesoKg, scqLimitada);
+        esquemaUtilizado = "Parkland (Día 1)";
+      } else if (pesoKg <= 30) {
+        const sc = ClinicalMath.superficieCorporalExacta(pesoKg);
+        if (sc) {
+          volumenReanimacion = ClinicalMath.esquemaGalveston(sc, scqLimitada);
+          esquemaUtilizado = "Galveston (Día 1)";
+        }
+      }
+      if (volumenReanimacion > 0) {
+        const qDiv = document.createElement("div");
+        qDiv.className = `clinical-note danger p-3 rounded-md mb-2`;
+        qDiv.innerHTML = `<p class="text-sm"><b>Reanimación Quemados (${esquemaUtilizado}):</b> Administrar ${volumenReanimacion.toFixed(0)} mL de Solución Hartman. Pasar 50% en las primeras 8h y 50% en las siguientes 16h. No usar KCl.</p>`;
+        document.getElementById("notasClinicas").appendChild(qDiv);
+        document.getElementById("notasClinicas").classList.remove("hidden");
+      }
     }
   }
 
   // -- Procesar Nutrición Parenteral (NPT) --
-  procesarNPT(pesoKg);
+  if (currentView === 'npt') {
+    procesarNPT(pesoKg);
+    if (document.querySelectorAll("#notasClinicas .clinical-note").length > 0) {
+      document.getElementById("notasClinicas").classList.remove("hidden");
+    }
+  }
 
   document.getElementById("resultado").classList.remove("hidden");
   document.getElementById("resultado").scrollIntoView({ behavior: 'smooth' });
@@ -717,12 +770,22 @@ function copiarIndicaciones() {
         .join('\n') + `\n`;
   }
 
-  const textoACopiar = `INDICACIÓN DE HIDRATACIÓN PARENTERAL - PEDIATRÍA\n\n` +
-    `DATOS DEL PACIENTE\n  Peso: ${peso.toFixed(3)} kg\n  Edad: ${edadStr}\n  Condiciones relevantes: ${condiciones}\n\n` +
-    `REQUERIMIENTOS CALCULADOS\n  Mantenimiento: ${mantenimiento} mL/24h\n  Déficit: ${deficit} mL\n  Total 24h: ${total24h} mL\n  Flujo horario: ${flujoHorario} mL/h\n\n` +
-    `SOLUCIÓN RECOMENDADA\n  ${solucionNombre}\n  Composición:\n     ${composicion}\n  Aporte estimado:\n     ${aporteEstimado}\n` +
-    notasExtras +
-    `\nOBSERVACIONES\n  Monitorizar electrolitos séricos (Na, K) cada 24h inicialmente\n  Controlar balance hídrico estricto\n  Revaluar requerimientos diariamente`;
+  let textoACopiar = `REPORTE PEDICALC - ${currentView.toUpperCase()}\n\n` +
+    `DATOS DEL PACIENTE\n  Peso: ${peso.toFixed(3)} kg\n  Edad: ${edadStr}\n`;
+
+  if (currentView === 'hidratacion') {
+    textoACopiar += `  Condiciones relevantes: ${condiciones}\n\n` +
+      `REQUERIMIENTOS CALCULADOS\n  Mantenimiento: ${mantenimiento} mL/24h\n  Déficit: ${deficit} mL\n  Total 24h: ${total24h} mL\n  Flujo horario: ${flujoHorario} mL/h\n\n` +
+      `SOLUCIÓN RECOMENDADA\n  ${solucionNombre}\n  Composición:\n     ${composicion}\n  Aporte estimado:\n     ${aporteEstimado}\n`;
+  }
+
+  if (notasExtras) {
+    textoACopiar += notasExtras;
+  }
+
+  if (currentView === 'hidratacion') {
+    textoACopiar += `\nOBSERVACIONES\n  Monitorizar electrolitos séricos (Na, K) cada 24h inicialmente\n  Controlar balance hídrico estricto\n  Revaluar requerimientos diariamente`;
+  }
 
   navigator.clipboard.writeText(textoACopiar)
     .then(() => {
@@ -854,15 +917,12 @@ document.addEventListener("DOMContentLoaded", () => {
     checkbox.addEventListener('change', toggleTemperaturas);
   });
 
-  const btnNpt = document.getElementById("activarNPT");
-  if (btnNpt) {
-    btnNpt.addEventListener("change", function() {
-      const div = document.getElementById("nptInputs");
-      if (this.checked) div.classList.remove("hidden");
-      else div.classList.add("hidden");
-    });
+  const savedView = localStorage.getItem('pedicalc_currentView');
+  if (savedView && savedView !== 'home') {
+    openCalc(savedView);
+  } else {
+    goHome();
   }
-  
   document.querySelectorAll('input, select').forEach(el => {
     el.addEventListener('change', saveFormData);
     el.addEventListener('keyup', saveFormData);
