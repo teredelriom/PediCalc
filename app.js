@@ -114,6 +114,7 @@ function goHome() {
   document.getElementById('app-title').innerHTML = '<i class="fas fa-calculator mr-2 text-primary"></i>PediCalc';
   localStorage.setItem('pedicalc_currentView', 'home');
   history.pushState("", document.title, window.location.pathname + window.location.search);
+  if (typeof updateInstallButtonVisibility === 'function') updateInstallButtonVisibility();
 }
 
 function openCalc(calcType) {
@@ -137,6 +138,7 @@ function openCalc(calcType) {
   document.getElementById('app-title').innerHTML = titles[calcType] || '<i class="fas fa-calculator mr-2 text-primary"></i>PediCalc';
   localStorage.setItem('pedicalc_currentView', calcType);
   window.location.hash = calcType;
+  if (typeof updateInstallButtonVisibility === 'function') updateInstallButtonVisibility();
 }
 
 // Registro de Service Worker para PWA
@@ -161,29 +163,41 @@ if ('serviceWorker' in navigator) {
 
 // Manejo de instalación PWA
 let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
+
+function updateInstallButtonVisibility() {
+  const installBtn = document.getElementById('installBtn');
+  if (!installBtn) return;
+  if (deferredPrompt && currentView === 'home') {
+    installBtn.classList.remove('hidden');
+  } else {
+    installBtn.classList.add('hidden');
+  }
+}
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  if (installBtn) {
-    installBtn.classList.remove('hidden');
+  updateInstallButtonVisibility();
+  
+  const installBtn = document.getElementById('installBtn');
+  if (installBtn && !installBtn.dataset.listenerAttached) {
+    installBtn.dataset.listenerAttached = 'true';
     installBtn.addEventListener('click', async () => {
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
-          installBtn.classList.add('hidden');
+          deferredPrompt = null;
+          updateInstallButtonVisibility();
         }
-        deferredPrompt = null;
       }
     });
   }
 });
 
 window.addEventListener('appinstalled', () => {
-  if (installBtn) installBtn.classList.add('hidden');
   deferredPrompt = null;
+  updateInstallButtonVisibility();
 });
 
 // Funciones de validación
