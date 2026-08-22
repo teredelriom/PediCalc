@@ -40,5 +40,39 @@ window.ClinicalMath = {
   insulinaNPHTransicion(mlInfusion24h) { return mlInfusion24h / 10; },
   capacidadGastricaNeonatal(pesoGramos) { return Math.floor(pesoGramos / 100) - 3; },
   esquemaParkland(pesoKg, scqPct) { return 4 * pesoKg * scqPct; },
-  esquemaGalveston(sc, scqPct) { return 5000 * sc * (scqPct / 100); }
+  esquemaGalveston(sc, scqPct) { return 5000 * sc * (scqPct / 100); },
+  calcularAporteNeonatal(pesoKg, diasVida) {
+    const pretermino = pesoKg <= 1.5;
+    let mlKg = 0;
+    if (diasVida === 1) mlKg = pretermino ? 90 : 70; 
+    else if (diasVida === 2) mlKg = pretermino ? 110 : 90;
+    else if (diasVida === 3) mlKg = pretermino ? 130 : 110;
+    else if (diasVida === 4) mlKg = pretermino ? 150 : 130;
+    else mlKg = 155; 
+    return {
+      total: pesoKg * mlKg,
+      rango: [mlKg - 10, mlKg + 10],
+      unidad: "mL/kg/día",
+      factor: mlKg,
+      usaPeso: true,
+      label: `Neonato (${pretermino ? '≤ 1.5kg' : '> 1.5kg'}, Día ${diasVida})`
+    };
+  },
+  calcularElectrolitosNeonatales(pesoKg, diasVida) {
+    if (diasVida <= 2) {
+      return { na: [0, 0], k: [0, 0], ca: [50 * pesoKg, 100 * pesoKg], cl: [0,0], mg: [0,0], p: [0,0], restringido: true };
+    }
+    return { 
+      na: [3 * pesoKg, 4 * pesoKg], 
+      k: [1 * pesoKg, 2 * pesoKg], 
+      cl: [3 * pesoKg, 4 * pesoKg],
+      ca: [50 * pesoKg, 100 * pesoKg], 
+      mg: [0.4 * pesoKg, 0.9 * pesoKg], 
+      p: [15 * pesoKg, 50 * pesoKg],
+      restringido: false
+    };
+  },
+  calcularVIG(volumenMl, porcentajeGlucosa, pesoKg) {
+    return (volumenMl * porcentajeGlucosa) / (pesoKg * 144);
+  }
 };

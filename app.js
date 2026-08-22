@@ -86,6 +86,20 @@ const PREPARACIONES = {
     componentes: ["S. Glucosado 5% 500 cc", "NaCl 10% 30 cc", "KCl 10% 7,5 cc"],
     naPorLitro: 105,
     incluyeK: true
+  },
+  neonatalDia1: {
+    nombre: "Neonatal (Sin Electrolitos)",
+    indicacion: "Líquidos para primeros 2 días de vida",
+    componentes: ["S. Glucosado 10% 500 cc"],
+    naPorLitro: 0,
+    incluyeK: false
+  },
+  neonatalConElectrolitos: {
+    nombre: "Neonatal con Electrolitos",
+    indicacion: "Líquidos de mantención (Día 3+)",
+    componentes: ["S. Glucosado 10% 500 cc", "NaCl 10% 15 cc", "KCl 10% 5 cc"],
+    naPorLitro: 50, // aprox 3 mEq/kg depending on volume
+    incluyeK: true
   }
 };
 // Enrutamiento de la aplicación (SPA)
@@ -550,17 +564,17 @@ function procesarCAD(pesoKg, mantenimiento) {
   container.appendChild(div);
 }
 
-function calcularSolucionRecomendada(total24h, preparacion) {
+function calcularSolucionRecomendada(total24h, preparacion, esNeonato = false) {
   const VOLUMEN_BASE_PREPARACION = 500; 
   const MEQ_POTASIO_POR_BASE = 10.05; 
-  const porcentajeGlucosa = getSelectedSolutionPercentage();
+  const porcentajeGlucosa = esNeonato ? 10 : getSelectedSolutionPercentage();
   const factor = total24h / VOLUMEN_BASE_PREPARACION;
   
   const componentesEscalados = preparacion.componentes.map(item => {
     const match = item.match(/^(.*?)(\d+(?:[,.]\d+)?)\s*(cc|ml)/i);
     if (!match) return item;
     const valor = parseFloat(match[2].replace(',', '.')) * factor;
-    const componente = match[1].replace(/S\. Glucosado \d+%/i, `S. Glucosado ${porcentajeGlucosa}%`);
+    const componente = esNeonato ? match[1] : match[1].replace(/S\. Glucosado \d+%/i, `S. Glucosado ${porcentajeGlucosa}%`);
     return `${componente}${valor.toFixed(1).replace('.', ',')} ${match[3]}`;
   });
 
@@ -693,26 +707,34 @@ function mostrarNotasClinicas(solucion, edadMeses, categoria, pesoKg) {
   });
 }
 
-function mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos) {
+function mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos, esNeonato = false) {
   const container = document.getElementById("desgloseAportesContainer");
   const rangoTexto = aporte.rango[0] === aporte.rango[1] ? aporte.rango[0] : `${aporte.rango[0]}-${aporte.rango[1]}`;
   const base = aporte.usaPeso
     ? `${pesoKg.toFixed(2)} kg x ${aporte.factor} ${aporte.unidad}`
     : `${aporte.superficieCorporal.toFixed(3)} m2 x ${aporte.factor} ${aporte.unidad}`;
     
-  const hollidaySegar = ClinicalMath.hollidaySegar(pesoKg);
+  let hollidayHtml = "";
+  if (!esNeonato) {
+    const hollidaySegar = ClinicalMath.hollidaySegar(pesoKg);
+    hollidayHtml = `<p class="text-sm bg-white p-2 rounded border border-secondary mb-4"><strong>Referencia Holliday-Segar:</strong> ${Math.round(hollidaySegar)} mL/24h (${pesoKg <= 10 ? "100 mL/kg" : pesoKg <= 20 ? "1000 + 50 mL/kg sobre 10 kg" : "1500 + 20 mL/kg sobre 20 kg"}). Holliday MA, Segar WE, 1957.</p>`;
+  } else {
+    const vig = ClinicalMath.calcularVIG(total24h, 10, pesoKg);
+    hollidayHtml = `<p class="text-sm bg-warning/20 p-2 rounded border border-warning mb-4"><strong>Protocolo Neonatal:</strong> Se ha utilizado cálculo neonatal en lugar de Holliday-Segar. <br><strong>VIG Estimado (con SG10%):</strong> ${vig.toFixed(1)} mg/kg/min (Objetivo: 4-8 mg/kg/min).</p>`;
+  }
+
   container.innerHTML = `
     <p class="font-medium mb-2">Cálculo de aportes (${aporte.label}):</p>
     <p class="text-sm bg-white p-2 rounded border border-secondary mb-4">${base} = ${Math.round(total24h)} mL/día. Rango usado: ${rangoTexto} ${aporte.unidad}.</p>
     ${!aporte.usaPeso ? `<p class="text-sm bg-white p-2 rounded border border-secondary mb-4">Superficie corporal = (peso x 4 + 7) / (90 + peso) = ${aporte.superficieCorporal.toFixed(3)} m2.</p>` : ''}
-    <p class="text-sm bg-white p-2 rounded border border-secondary mb-4"><strong>Referencia Holliday-Segar:</strong> ${Math.round(hollidaySegar)} mL/24h (${pesoKg <= 10 ? "100 mL/kg" : pesoKg <= 20 ? "1000 + 50 mL/kg sobre 10 kg" : "1500 + 20 mL/kg sobre 20 kg"}). Holliday MA, Segar WE, 1957.</p>
+    ${hollidayHtml}
     <p class="font-medium mb-2">Requerimientos diarios de electrolitos:</p>
     <ul class="text-sm space-y-1 list-disc pl-5">
       <li>Líquidos de mantención: ${Math.round(mantenimiento)} mL/24h</li>
-      <li>Adicional por pérdidas/deshidratación: ${Math.round(deficit)} mL/24h</li>
-      <li>Sodio: ${electrolitos.na[0].toFixed(1)}-${electrolitos.na[1].toFixed(1)} mEq/d</li>
-      <li>Potasio: ${electrolitos.k[0].toFixed(1)}-${electrolitos.k[1].toFixed(1)} mEq/d</li>
-      <li>Cloro: ${electrolitos.cl[0].toFixed(1)}-${electrolitos.cl[1].toFixed(1)} mEq/d</li>
+      ${!esNeonato ? `<li>Adicional por pérdidas/deshidratación: ${Math.round(deficit)} mL/24h</li>` : ''}
+      <li>Sodio: ${electrolitos.na[0].toFixed(1)}${electrolitos.na[1] !== electrolitos.na[0] ? '-' + electrolitos.na[1].toFixed(1) : ''} mEq/d</li>
+      <li>Potasio: ${electrolitos.k[0].toFixed(1)}${electrolitos.k[1] !== electrolitos.k[0] ? '-' + electrolitos.k[1].toFixed(1) : ''} mEq/d</li>
+      <li>Cloro: ${electrolitos.cl[0].toFixed(1)}${electrolitos.cl[1] !== electrolitos.cl[0] ? '-' + electrolitos.cl[1].toFixed(1) : ''} mEq/d</li>
       <li>Calcio: ${electrolitos.ca[0].toFixed(0)}-${electrolitos.ca[1].toFixed(0)} mg/d</li>
       <li>Magnesio: ${electrolitos.mg[0].toFixed(1)}-${electrolitos.mg[1].toFixed(1)} mEq/d</li>
       <li>Fósforo: ${electrolitos.p[0].toFixed(0)}-${electrolitos.p[1].toFixed(0)} mg/d</li>
@@ -782,7 +804,10 @@ function calcular() {
   const edadInput = document.getElementById("edad").value;
   let edad = edadInput === "" ? "" : parseFloat(edadInput);
   const unidadEdad = document.getElementById("unidadEdad");
-  if (edad !== "" && unidadEdad && unidadEdad.value === "años") edad *= 12;
+  if (edad !== "" && unidadEdad) {
+    if (unidadEdad.value === "años") edad *= 12;
+    else if (unidadEdad.value === "dias") edad /= 30;
+  }
   const edadValidation = validateAge(edad);
   if (!edadValidation.valid) { showError("edad", edadValidation.message); return; }
   
@@ -810,12 +835,24 @@ function calcular() {
   if (currentView === 'hidratacion' && !validarTemperaturas(condiciones)) return;
   
   const categoria = obtenerCategoriaAporte(deficitPct, condiciones);
-  const aporte = ClinicalMath.calcularAporteDiario(pesoKg, categoria, APORTE_RANGOS);
-  const total24h = aporte.total;
-  const mantenimiento = ClinicalMath.calcularAporteDiario(pesoKg, "mantenimiento", APORTE_RANGOS).total;
-  const deficit = Math.max(total24h - mantenimiento, 0);
   
-  const preparacion = seleccionarPreparacion(condiciones, edad, categoria);
+  const esNeonato = unidadEdad && unidadEdad.value === "dias" && edadInput !== "" && parseFloat(edadInput) <= 28;
+  const diasVida = esNeonato ? parseFloat(edadInput) : null;
+
+  let aporte, total24h, mantenimiento, deficit, preparacion;
+  if (esNeonato) {
+    aporte = ClinicalMath.calcularAporteNeonatal(pesoKg, diasVida);
+    total24h = aporte.total;
+    mantenimiento = total24h; // Neonatal fluids are unified
+    deficit = 0;
+    preparacion = diasVida <= 2 ? PREPARACIONES.neonatalDia1 : PREPARACIONES.neonatalConElectrolitos;
+  } else {
+    aporte = ClinicalMath.calcularAporteDiario(pesoKg, categoria, APORTE_RANGOS);
+    total24h = aporte.total;
+    mantenimiento = ClinicalMath.calcularAporteDiario(pesoKg, "mantenimiento", APORTE_RANGOS).total;
+    deficit = Math.max(total24h - mantenimiento, 0);
+    preparacion = seleccionarPreparacion(condiciones, edad, categoria);
+  }
   
   document.getElementById("mantenimientoResult").textContent = Math.round(mantenimiento);
   document.getElementById("deficitResult").textContent = Math.round(deficit);
@@ -834,8 +871,10 @@ function calcular() {
     schwartzRef.classList.add("hidden");
   }
   
-  const electrolitos = ClinicalMath.calcularRequerimientosElectrolitos(pesoKg);
-  const solucionOptima = calcularSolucionRecomendada(total24h, preparacion);
+  const electrolitos = esNeonato 
+    ? ClinicalMath.calcularElectrolitosNeonatales(pesoKg, diasVida)
+    : ClinicalMath.calcularRequerimientosElectrolitos(pesoKg);
+  const solucionOptima = calcularSolucionRecomendada(total24h, preparacion, esNeonato);
   
   // Limpiar notas y visibilidad base
   document.getElementById("notasClinicas").innerHTML = "";
@@ -844,7 +883,7 @@ function calcular() {
 
   if (currentView === 'hidratacion') {
     document.getElementById("resultados-hidratacion").classList.remove("hidden");
-    mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos);
+    mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h, electrolitos, esNeonato);
     mostrarNutricionReferencia(edad);
     mostrarNotasClinicas(solucionOptima, edad, categoria, pesoKg);
   }
@@ -1099,7 +1138,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let val = parseFloat(document.getElementById("edad").value);
     if (isNaN(val)) { clearError("edad"); return; }
     const unidadEdad = document.getElementById("unidadEdad");
-    if (unidadEdad && unidadEdad.value === "años") val *= 12;
+    if (unidadEdad) {
+      if (unidadEdad.value === "años") val *= 12;
+      else if (unidadEdad.value === "dias") val /= 30;
+    }
     const validation = validateAge(val);
     if (!validation.valid) showError("edad", validation.message);
     else clearError("edad");
