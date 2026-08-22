@@ -146,7 +146,7 @@ function validateWeight(weight) {
 }
 
 function validateAge(age) {
-  if (age !== "" && (isNaN(age) || age < 0)) return { valid: false, message: "Ingrese una edad válida" };
+  if (age === "" || isNaN(age) || age < 0) return { valid: false, message: "Ingrese una edad válida" };
   if (age > MAX_AGE_MONTHS) return { valid: false, message: "Edad máxima pediátrica es 216 meses (18 años)" };
   return { valid: true };
 }
@@ -245,8 +245,8 @@ function obtenerCondicionesSeleccionadas() {
     .map(cb => cb.value);
 }
 
-// Módulo de Matemáticas Clínicas
-const ClinicalMath = {
+// Legacy copy retained temporarily for backwards review; the active audited module is clinical-math.js.
+const LegacyClinicalMath = {
   superficieCorporal: function(pesoKg) {
     return ((pesoKg * 4) + 7) / (90 + pesoKg);
   },
@@ -298,7 +298,7 @@ const ClinicalMath = {
   }
 };
 
-Object.assign(ClinicalMath, {
+Object.assign(LegacyClinicalMath, {
   superficieCorporalExacta: function(pesoKg) {
     if (pesoKg < 3 || pesoKg > 8) return ((pesoKg * 4) + 7) / (90 + pesoKg);
     return null;
@@ -568,10 +568,12 @@ function mostrarDesgloseAportes(pesoKg, aporte, mantenimiento, deficit, total24h
     ? `${pesoKg.toFixed(2)} kg x ${aporte.factor} ${aporte.unidad}`
     : `${aporte.superficieCorporal.toFixed(3)} m2 x ${aporte.factor} ${aporte.unidad}`;
     
+  const hollidaySegar = ClinicalMath.hollidaySegar(pesoKg);
   container.innerHTML = `
     <p class="font-medium mb-2">Cálculo de aportes (${aporte.label}):</p>
     <p class="text-sm bg-white p-2 rounded border border-secondary mb-4">${base} = ${Math.round(total24h)} mL/día. Rango usado: ${rangoTexto} ${aporte.unidad}.</p>
     ${!aporte.usaPeso ? `<p class="text-sm bg-white p-2 rounded border border-secondary mb-4">Superficie corporal = (peso x 4 + 7) / (90 + peso) = ${aporte.superficieCorporal.toFixed(3)} m2.</p>` : ''}
+    <p class="text-sm bg-white p-2 rounded border border-secondary mb-4"><strong>Referencia Holliday-Segar:</strong> ${Math.round(hollidaySegar)} mL/24h (${pesoKg <= 10 ? "100 mL/kg" : pesoKg <= 20 ? "1000 + 50 mL/kg sobre 10 kg" : "1500 + 20 mL/kg sobre 20 kg"}). Holliday MA, Segar WE, 1957.</p>
     <p class="font-medium mb-2">Requerimientos diarios de electrolitos:</p>
     <ul class="text-sm space-y-1 list-disc pl-5">
       <li>Líquidos de mantención: ${Math.round(mantenimiento)} mL/24h</li>
@@ -645,9 +647,10 @@ function calcular() {
   const pesoValidation = validateWeight(peso);
   if (!pesoValidation.valid) { showError("peso", pesoValidation.message); return; }
   
-  let edad = parseFloat(document.getElementById("edad").value) || 0;
+  const edadInput = document.getElementById("edad").value;
+  let edad = edadInput === "" ? "" : parseFloat(edadInput);
   const unidadEdad = document.getElementById("unidadEdad");
-  if (unidadEdad && unidadEdad.value === "años") edad *= 12;
+  if (edad !== "" && unidadEdad && unidadEdad.value === "años") edad *= 12;
   const edadValidation = validateAge(edad);
   if (!edadValidation.valid) { showError("edad", edadValidation.message); return; }
   

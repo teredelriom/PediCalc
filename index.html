@@ -80,7 +80,7 @@
         <div>
           <label for="edad" class="block text-sm font-medium text-primary mb-1">Edad Cronológica</label>
           <div class="input-with-unit">
-            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0">
+            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0" required aria-describedby="edad-error">
             <select id="unidadEdad" class="unit focus:outline-none cursor-pointer">
               <option value="meses">meses</option>
               <option value="años">años</option>
@@ -329,27 +329,27 @@
           <div class="result-card">
             <h3 class="text-sm text-primary mb-1">Mantenimiento</h3>
             <div class="result-value" id="mantenimientoResult">0</div>
-            <div class="result-unit">mL/24h</div>
+            <div class="result-unit">mL/24h · rango clínico seleccionado</div>
           </div>
           <div class="result-card">
             <h3 class="text-sm text-primary mb-1">Déficit</h3>
             <div class="result-value" id="deficitResult">0</div>
-            <div class="result-unit">mL</div>
+            <div class="result-unit">mL · total − mantención</div>
           </div>
           <div class="result-card">
             <h3 class="text-sm text-primary mb-1">Total 24h</h3>
             <div class="result-value" id="total24hResult">0</div>
-            <div class="result-unit">mL</div>
+            <div class="result-unit">mL · SC × aporte o kg × aporte</div>
           </div>
           <div class="result-card">
             <h3 class="text-sm text-primary mb-1">Flujo horario</h3>
             <div class="result-value" id="flujoHorarioResult">0</div>
-            <div class="result-unit">mL/h</div>
+            <div class="result-unit">mL/h · total / 24 h</div>
           </div>
           <div class="result-card hidden" id="gfrCard">
             <h3 class="text-sm text-primary mb-1">TFG Estimada</h3>
             <div class="result-value" id="gfrResult">0</div>
-            <div class="result-unit">mL/min/1.73m²</div>
+            <div class="result-unit">mL/min/1.73m² · 0.413 × talla / creatinina</div>
           </div>
         </div>
         <div class="mt-4 text-xs text-gray-500 italic border-t border-success/20 pt-2">
@@ -429,6 +429,7 @@
     Estás trabajando sin conexión. Los cambios se sincronizarán cuando vuelvas a estar en línea.
   </div>
 
+  <script src="clinical-math.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

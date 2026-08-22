@@ -23,6 +23,12 @@ Esta aplicación web permite calcular de manera precisa los requerimientos de hi
 - 🖼️ html2canvas (exportar resultados)
 - 📲 PWA con manifest.json y sw.js
 
+### Arquitectura
+
+- `clinical-math.js` concentra las fórmulas puras (sin acceso al DOM), incluidas superficie corporal, Holliday-Segar, Schwartz y correcciones bioquímicas, para facilitar su auditoría clínica.
+- `app.js` se limita a validación, estado, selección de protocolos y presentación de resultados.
+- `sw.js` precachea los recursos de la aplicación y usa una estrategia *Stale-While-Revalidate*: entrega el recurso local de inmediato y actualiza la caché en segundo plano cuando hay conectividad.
+
 📁 Archivos esperados en el mismo directorio:
 - 📄 index.html (este archivo)
 - 🔧 sw.js (Service Worker para funcionalidad offline)

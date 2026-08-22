@@ -5,6 +5,7 @@ const ASSETS = [
   './',
   './index.html',
   './app.js',
+  './clinical-math.js',
   './styles.css',
   './manifest.json',
   './favicon.ico',
@@ -68,13 +69,12 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) =>
       Promise.all(
-        cacheNames.map((name) => {
+        [...cacheNames.map((name) => {
           if (name !== CACHE_NAME) {
             return caches.delete(name);
           }
-        })
+        }), self.clients.claim()]
       )
     )
   );
-  self.clients.claim();
 });
