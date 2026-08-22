@@ -805,9 +805,9 @@ function calcular() {
   }
   
   const pesoKg = peso / 1000;
-  const deficitPct = parseFloat(document.getElementById("deshidratacion").value);
-  const condiciones = obtenerCondicionesSeleccionadas();
-  if (!validarTemperaturas(condiciones)) return;
+  const deficitPct = parseFloat(document.getElementById("deshidratacion").value) || 0;
+  const condiciones = currentView === 'hidratacion' ? obtenerCondicionesSeleccionadas() : [];
+  if (currentView === 'hidratacion' && !validarTemperaturas(condiciones)) return;
   
   const categoria = obtenerCategoriaAporte(deficitPct, condiciones);
   const aporte = ClinicalMath.calcularAporteDiario(pesoKg, categoria, APORTE_RANGOS);
