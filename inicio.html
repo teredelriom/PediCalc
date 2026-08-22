@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#037F8C" />
+  <meta name="description" content="PediCalc: acceso rápido a calculadoras pediátricas." />
+  <title>PediCalc | Calculadoras pediátricas</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180x180.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="home-page">
+  <main class="home-shell">
+    <section class="home-hero" aria-labelledby="home-title">
+      <div class="home-brand"><i class="fas fa-heart-pulse" aria-hidden="true"></i> PediCalc</div>
+      <h1 id="home-title">Calculadoras para el cuidado pediátrico</h1>
+      <p>Seleccione una herramienta para comenzar. Verifique siempre los resultados con el protocolo institucional y el contexto clínico del paciente.</p>
+    </section>
+
+    <section class="calculator-menu" aria-label="Calculadoras disponibles">
+      <a class="calculator-card calculator-card--primary" href="index.html" aria-label="Abrir calculadora de balance hídrico">
+        <span class="calculator-icon"><i class="fas fa-droplet" aria-hidden="true"></i></span>
+        <span class="calculator-content">
+          <strong>Balance hídrico</strong>
+          <small>Mantención, déficit, flujo horario y electrolitos.</small>
+        </span>
+        <i class="fas fa-arrow-right calculator-arrow" aria-hidden="true"></i>
+      </a>
+
+      <a class="calculator-card" href="index.html#seccionNPT" aria-label="Abrir calculadora de nutrición parenteral">
+        <span class="calculator-icon"><i class="fas fa-utensils" aria-hidden="true"></i></span>
+        <span class="calculator-content">
+          <strong>Nutrición</strong>
+          <small>Nutrición parenteral total y referencias alimentarias.</small>
+        </span>
+        <i class="fas fa-arrow-right calculator-arrow" aria-hidden="true"></i>
+      </a>
+
+      <a class="calculator-card" href="index.html#seccionQuemados" aria-label="Abrir calculadora para pacientes quemados">
+        <span class="calculator-icon"><i class="fas fa-fire-flame-curved" aria-hidden="true"></i></span>
+        <span class="calculator-content">
+          <strong>Quemados</strong>
+          <small>Reposición de fluidos según superficie corporal quemada.</small>
+        </span>
+        <i class="fas fa-arrow-right calculator-arrow" aria-hidden="true"></i>
+      </a>
+
+      <a class="calculator-card" href="index.html#seccionLaboratorio" aria-label="Abrir calculadora de laboratorio y correcciones">
+        <span class="calculator-icon"><i class="fas fa-stethoscope" aria-hidden="true"></i></span>
+        <span class="calculator-content">
+          <strong>Laboratorio y correcciones</strong>
+          <small>Gasometría, electrolitos y cálculos de apoyo.</small>
+        </span>
+        <i class="fas fa-arrow-right calculator-arrow" aria-hidden="true"></i>
+      </a>
+    </section>
+
+    <p class="home-footer"><i class="fas fa-circle-info" aria-hidden="true"></i> Herramienta de apoyo para profesionales de la salud.</p>
+  </main>
+
+  <script src="home.js"></script>
+</body>
+</html>
