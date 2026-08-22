@@ -54,6 +54,7 @@
 </head>
 <body class="p-4 md:p-8">
   <div class="container fade-in">
+    <a class="home-link" href="inicio.html"><i class="fas fa-house" aria-hidden="true"></i> Inicio</a>
     <div id="installContainer" class="install-container hidden">
       <button id="installBtn" class="btn-tertiary text-white font-bold py-3 px-4 rounded-lg transition-colors flex items-center justify-center mx-auto">
         <i class="fas fa-download mr-2"></i> Instalar Aplicación
@@ -137,7 +138,7 @@
         <div>
           <label for="edad" class="block text-sm font-medium text-primary mb-1">Edad Cronológica</label>
           <div class="input-with-unit">
-            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0">
+            <input type="number" id="edad" class="w-full input-highlight p-3 border border-gray-300 rounded-l-lg" placeholder="Ej: 6" step="1" min="0" required aria-describedby="edad-error">
             <select id="unidadEdad" class="unit focus:outline-none cursor-pointer">
               <option value="meses">meses</option>
               <option value="años">años</option>
@@ -154,7 +155,7 @@
             <span class="unit">sem</span>
           </div>
           <p class="info-text">Opcional. Fundamental si el paciente tiene < 6 meses.</p>
-          <p id="edadGestacional-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p id="edadGestacional-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
 
         <div>
@@ -164,7 +165,7 @@
             <span class="unit">cm</span>
           </div>
           <p class="info-text">Opcional. Requerida para cálculo de TFG (Schwartz).</p>
-          <p id="talla-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p id="talla-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
 
         <div>
@@ -174,7 +175,7 @@
             <span class="unit">mg/dL</span>
           </div>
           <p class="info-text">Opcional. Para estimar función renal.</p>
-          <p id="creatinina-error" class="text-danger text-xs mt-1 hidden"></p>
+          <p id="creatinina-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
         </div>
       </div> <!-- Fin grid paciente -->
       </div> <!-- Fin #patient-data -->
@@ -252,7 +253,7 @@
           <input type="number" id="tempF" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 38.5" step="0.1" min="35" max="42">
           <span class="unit">°C</span>
         </div>
-        <p id="tempF-error" class="text-red-500 text-xs mt-1 hidden"></p>
+        <p id="tempF-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
       </div>
       
       <div id="tempAmbiente" class="hidden">
@@ -261,7 +262,7 @@
           <input type="number" id="tempA" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 33" step="0.1" min="20" max="50">
           <span class="unit">°C</span>
         </div>
-        <p id="tempA-error" class="text-red-500 text-xs mt-1 hidden"></p>
+        <p id="tempA-error" class="text-danger text-xs mt-1 hidden" role="alert"></p>
       </div>
 
       <!-- Solución base se queda en Hidratación -->
@@ -469,6 +470,7 @@
     Estás trabajando sin conexión. Los cambios se sincronizarán cuando vuelvas a estar en línea.
   </div>
 
+  <script src="clinical-math.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

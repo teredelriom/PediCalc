@@ -1,8 +1,8 @@
 {
-  "name": "Calculadora de Hidratación Pediátrica",
+  "name": "PediCalc | Calculadoras pediátricas",
   "short_name": "PediCalc",
-  "description": "Calculadora para hidratación pediátrica, con soporte sin conexión.",
-  "start_url": "./index.html",
+  "description": "Calculadoras pediátricas para hidratación, nutrición y quemados, con soporte sin conexión.",
+  "start_url": "./inicio.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#F8F9FA",

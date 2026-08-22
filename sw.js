@@ -1,10 +1,13 @@
 /* service-worker.js – PediCalc PWA */
-const CACHE_NAME = 'hydration-cache-v4';
+const CACHE_NAME = 'pedicalc-cache-v6';
 
 const ASSETS = [
   './',
+  './inicio.html',
+  './home.js',
   './index.html',
   './app.js',
+  './clinical-math.js',
   './styles.css',
   './manifest.json',
   './favicon.ico',
@@ -64,16 +67,16 @@ self.addEventListener('fetch', (event) => {
 /* =====================================================
    Activate – purge outdated caches
    ===================================================== */
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) =>
       Promise.all(
-        cacheNames.map((name) => {
+        [...cacheNames.map((name) => {
           if (name !== CACHE_NAME) {
             return caches.delete(name);
           }
-        })
+        }), self.clients.claim()]
       )
     )
   );
-  self.clients.claim();
 });
