@@ -99,6 +99,7 @@ function goHome() {
   document.getElementById('resultado').classList.add('hidden');
   document.getElementById('app-title').innerHTML = '<i class="fas fa-calculator mr-2 text-primary"></i>PediCalc';
   localStorage.setItem('pedicalc_currentView', 'home');
+  history.pushState("", document.title, window.location.pathname + window.location.search);
 }
 
 function openCalc(calcType) {
@@ -116,10 +117,10 @@ function openCalc(calcType) {
     'hidratacion': '<i class="fas fa-tint mr-2 text-primary"></i>Balance Hídrico',
     'laboratorio': '<i class="fas fa-vial mr-2 text-warning"></i>Laboratorio y Correcciones',
     'quemados': '<i class="fas fa-fire-alt mr-2 text-danger"></i>Manejo de Quemados',
-    'npt': '<i class="fas fa-flask mr-2 text-success"></i>Nutrición Parenteral'
   };
   document.getElementById('app-title').innerHTML = titles[calcType] || '<i class="fas fa-calculator mr-2 text-primary"></i>PediCalc';
   localStorage.setItem('pedicalc_currentView', calcType);
+  window.location.hash = calcType;
 }
 
 // Registro de Service Worker para PWA
@@ -989,8 +990,20 @@ document.addEventListener("DOMContentLoaded", () => {
     checkbox.addEventListener('change', toggleTemperaturas);
   });
 
+  const hash = window.location.hash.replace('#', '');
+  const hashToView = {
+    'seccionHidratacion': 'hidratacion', 'hidratacion': 'hidratacion',
+    'seccionNPT': 'npt', 'npt': 'npt',
+    'seccionQuemados': 'quemados', 'quemados': 'quemados',
+    'seccionLaboratorio': 'laboratorio', 'laboratorio': 'laboratorio'
+  };
+
+  const viewFromHash = hashToView[hash] || hashToView['seccion' + hash.charAt(0).toUpperCase() + hash.slice(1)];
   const savedView = localStorage.getItem('pedicalc_currentView');
-  if (savedView && savedView !== 'home') {
+  
+  if (viewFromHash) {
+    openCalc(viewFromHash);
+  } else if (savedView && savedView !== 'home') {
     openCalc(savedView);
   } else {
     goHome();
