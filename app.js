@@ -161,20 +161,19 @@ if ('serviceWorker' in navigator) {
 
 // Manejo de instalación PWA
 let deferredPrompt;
-const installContainer = document.getElementById('installContainer');
 const installBtn = document.getElementById('installBtn');
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  if (installContainer) installContainer.classList.remove('hidden');
   if (installBtn) {
+    installBtn.classList.remove('hidden');
     installBtn.addEventListener('click', async () => {
       if (deferredPrompt) {
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         if (outcome === 'accepted') {
-          installContainer.classList.add('hidden');
+          installBtn.classList.add('hidden');
         }
         deferredPrompt = null;
       }
@@ -183,7 +182,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 window.addEventListener('appinstalled', () => {
-  if (installContainer) installContainer.classList.add('hidden');
+  if (installBtn) installBtn.classList.add('hidden');
   deferredPrompt = null;
 });
 
