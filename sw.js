@@ -1,5 +1,6 @@
 /* service-worker.js – PediCalc PWA */
-const CACHE_NAME = 'pedicalc-cache-v10';
+const CACHE_NAME = 'pedicalc-cache-v12';
+const ASSETS = [
   './',
   './index.html',
   './app.js',
