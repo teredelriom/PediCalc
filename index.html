@@ -112,6 +112,16 @@
         <p class="text-gray-600 text-sm">Anion Gap, Osmolaridad Efectiva, Na+ corregido y correcciones de gases venosos.</p>
       </div>
 
+      <div class="home-card bg-white p-6 rounded-xl shadow-md border-t-4 border-danger cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all" onclick="openCalc('cad')">
+        <div class="flex items-center mb-4">
+          <div class="w-12 h-12 bg-danger/10 rounded-full flex items-center justify-center text-danger text-2xl mr-4">
+            <i class="fas fa-syringe"></i>
+          </div>
+          <h3 class="text-xl font-bold text-primary-dark m-0">Cetoacidosis (CAD)</h3>
+        </div>
+        <p class="text-gray-600 text-sm">Protocolo completo: reanimación hídrica, corrección de electrolitos, bicarbonato e insulina.</p>
+      </div>
+
     </div>
 
     <!-- VISTA CALCULADORA -->
@@ -360,6 +370,81 @@
           </div>
         </div>
       </div> <!-- Fin #sec-npt -->
+
+      <!-- SECCION: CETOACIDOSIS DIABETICA (CAD) -->
+      <div id="sec-cad" class="calc-section hidden space-y-6">
+        
+        <!-- Bloque 1: Líquidos y Electrolitos -->
+        <div class="p-4 border border-danger rounded-lg bg-gray-50 dark:bg-gray-800">
+          <span class="block text-sm font-bold text-danger mb-3 border-b border-danger/30 pb-2"><i class="fas fa-tint"></i> Líquidos y Electrolitos</span>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label class="block text-xs font-medium text-primary mb-1">Glucemia Actual</label>
+              <div class="input-with-unit">
+                <input type="number" id="cadGlucemia" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 350" step="1">
+                <span class="unit">mg/dL</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-primary mb-1">Na medido</label>
+              <div class="input-with-unit">
+                <input type="number" id="cadNa" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 135" step="0.1">
+                <span class="unit">mEq/L</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-primary mb-1">Vol. Cargas administradas</label>
+              <div class="input-with-unit">
+                <input type="number" id="cadVolCargas" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 500" step="1">
+                <span class="unit">mL</span>
+              </div>
+              <p class="text-[10px] text-gray-500 mt-1">A restar de líquidos de 24h</p>
+            </div>
+          </div>
+          
+          <div class="mb-2">
+            <label class="block text-xs font-medium text-primary mb-1">Estrategia de Reemplazo Hídrico</label>
+            <select id="cadEstrategia" class="w-full input-highlight p-3 border border-gray-300 rounded-lg">
+              <option value="A">Opción A: Déficit 8.5% + Mantenimiento (Restando cargas)</option>
+              <option value="B">Opción B: Superficie Corporal 2000 - 2500 mL/m2</option>
+              <option value="C">Opción C: 15-20 mL/kg para 4 a 6 hrs (Recomendado si glucemia >300)</option>
+            </select>
+            <p id="cadRecomendacionC" class="text-xs text-danger mt-1 hidden font-bold"><i class="fas fa-exclamation-triangle"></i> ¡Glucemia > 300 mg/dL! Se sugiere Opción C.</p>
+          </div>
+        </div>
+
+        <!-- Bloque 2: Ácido-Base -->
+        <div class="p-4 border border-warning rounded-lg bg-gray-50 dark:bg-gray-800">
+          <span class="block text-sm font-bold text-warning mb-3 border-b border-warning/30 pb-2"><i class="fas fa-flask"></i> Manejo Ácido-Base (Bicarbonato)</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-primary mb-1">pH</label>
+              <input type="number" id="cadPh" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 7.1" step="0.01">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-primary mb-1">Exceso de Base (EB)</label>
+              <div class="input-with-unit">
+                <input type="number" id="cadEb" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: -12" step="0.1">
+                <span class="unit">mmol/L</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloque 3: Transición Insulina -->
+        <div class="p-4 border border-primary rounded-lg bg-gray-50 dark:bg-gray-800">
+          <span class="block text-sm font-bold text-primary mb-3 border-b border-primary/30 pb-2"><i class="fas fa-syringe"></i> Transición a Insulina NPH</span>
+          <p class="text-xs text-gray-600 mb-2">Para suspender la infusión (IAR 6UI/100mL) e iniciar NPH subcutánea:</p>
+          <div>
+            <label class="block text-xs font-medium text-primary mb-1">Total de mililitros infundidos en 24 hrs</label>
+            <div class="input-with-unit">
+              <input type="number" id="cadInfusionIar" class="w-full input-highlight p-3 border border-gray-300 rounded-lg" placeholder="Ej: 200" step="1">
+              <span class="unit">mL/24h</span>
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- Fin #sec-cad -->
 
       <!-- Botón de cálculo -->
       <button id="btnCalcular" type="submit"

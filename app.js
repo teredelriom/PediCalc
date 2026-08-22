@@ -117,6 +117,8 @@ function openCalc(calcType) {
     'hidratacion': '<i class="fas fa-tint mr-2 text-primary"></i>Balance Hídrico',
     'laboratorio': '<i class="fas fa-vial mr-2 text-warning"></i>Laboratorio y Correcciones',
     'quemados': '<i class="fas fa-fire-alt mr-2 text-danger"></i>Manejo de Quemados',
+    'npt': '<i class="fas fa-flask mr-2 text-success"></i>Nutrición Parenteral',
+    'cad': '<i class="fas fa-syringe mr-2 text-danger"></i>Cetoacidosis Diabética'
   };
   document.getElementById('app-title').innerHTML = titles[calcType] || '<i class="fas fa-calculator mr-2 text-primary"></i>PediCalc';
   localStorage.setItem('pedicalc_currentView', calcType);
@@ -449,6 +451,103 @@ function procesarNPT(pesoKg) {
   nptDiv.className = `clinical-note success p-3 rounded-md mb-2`;
   nptDiv.innerHTML = `<p class="text-sm">${nptHtml}</p>`;
   document.getElementById("notasClinicas").appendChild(nptDiv);
+}
+
+function procesarCAD(pesoKg, mantenimiento) {
+  if (isNaN(pesoKg)) return;
+  
+  const glucemia = parseFloat(document.getElementById('cadGlucemia')?.value);
+  const na = parseFloat(document.getElementById('cadNa')?.value);
+  const cargas = parseFloat(document.getElementById('cadVolCargas')?.value) || 0;
+  const estrategia = document.getElementById('cadEstrategia')?.value;
+  const ph = parseFloat(document.getElementById('cadPh')?.value);
+  const eb = parseFloat(document.getElementById('cadEb')?.value);
+  const infusionIar = parseFloat(document.getElementById('cadInfusionIar')?.value);
+
+  const container = document.getElementById("notasClinicas");
+  let html = `<h4 class="font-bold text-danger border-b border-danger/30 mb-2 pb-1"><i class="fas fa-syringe"></i> Protocolo CAD</h4>`;
+
+  const volCargaInicial = pesoKg * 15;
+  const volCargaMax = pesoKg * 20;
+  html += `<p class="text-sm mb-2"><b>1. Corrección Hipovolemia (Cargas):</b><br>
+    Solución Salina 0.9%: Administrar <b>${volCargaInicial.toFixed(0)} a ${volCargaMax.toFixed(0)} mL</b> en la primera hora.<br>
+    <span class="text-xs text-gray-600">Repetir si persiste deshidratación severa.</span></p>`;
+
+  if (estrategia) {
+    let vol24 = 0;
+    let volRate = 0;
+    let hrs = 24;
+    let estrategiaName = "";
+    if (estrategia === 'A') {
+      const deficit = pesoKg * 85; 
+      vol24 = (deficit + mantenimiento) - cargas;
+      estrategiaName = "Déficit (8.5%) + Mantención - Cargas";
+    } else if (estrategia === 'B') {
+      const sc = ClinicalMath.superficieCorporalExacta(pesoKg) || ((pesoKg * 4) + 7) / (90 + pesoKg); 
+      vol24 = sc * 2500;
+      estrategiaName = "Superficie Corporal (2500 mL/m2)";
+    } else if (estrategia === 'C') {
+      vol24 = pesoKg * 20; 
+      hrs = 6;
+      estrategiaName = "15-20 mL/kg (Pasar en 4-6h)";
+    }
+    volRate = vol24 / hrs;
+
+    html += `<p class="text-sm mb-1"><b>2. Soluciones de Reemplazo (${estrategiaName}):</b><br>
+      Volumen a infundir: <b>${Math.max(vol24, 0).toFixed(0)} mL</b> a <b>${Math.max(volRate, 0).toFixed(1)} mL/h</b>.</p>`;
+
+    if (!isNaN(glucemia)) {
+      let sueroTxt = "Solución Salina 0.9%";
+      if (glucemia < 250) {
+        sueroTxt = "Solución Salina 0.9% + Glucosada 5% (a partes iguales)";
+        html += `<p class="text-sm text-warning font-bold mb-1"><i class="fas fa-exclamation-circle"></i> Glucemia < 250 mg/dL: Cambiar a ${sueroTxt}. Agregar KCl (4mEq/100mL o 30-40mEq/m2).</p>`;
+      } else {
+        html += `<p class="text-sm mb-1">Solución base: <b>${sueroTxt}</b>.</p>`;
+      }
+
+      if (!isNaN(na)) {
+        const naCorregido = na + 0.016 * (glucemia - 100);
+        html += `<p class="text-sm mb-2"><b>Sodio Corregido:</b> ${naCorregido.toFixed(1)} mEq/L.<br>`;
+        if (naCorregido < 130) {
+          html += `Añadir NaCl al suero hasta completar 100-130 mEq/L (No usar concentraciones < 75mEq/L).</p>`;
+        } else {
+          html += `Aportes de Na de 75 mEq/L.</p>`;
+        }
+      }
+    }
+  }
+
+  if (!isNaN(ph) && !isNaN(eb)) {
+    if (ph < 6.9 && eb < -10) {
+      html += `<p class="text-sm text-danger font-bold mb-2"><i class="fas fa-flask"></i> Bicarbonato indicado (pH < 6.9 y EB < -10):<br>
+        Preparar: Agua bidestilada 250mL + 50 mEq NaHCO3. Pasar la mitad del déficit. Control gasométrico en 2 hrs.</p>`;
+    } else {
+      html += `<p class="text-sm text-success mb-2"><i class="fas fa-check"></i> Sin criterios para bicarbonato.</p>`;
+    }
+  }
+
+  html += `<p class="text-sm mb-2"><b>3. Esquema Insulina IAR (6UI en 100mL Fis 0.9%):</b><br>
+    - &gt; 180 mg/dL: 50 mL/h<br>
+    - 144 a 179 mg/dL: 25 mL/h<br>
+    - 108 a 143 mg/dL: 12.5 mL/h<br>
+    - 72 a 107 mg/dL: 6 mL/h<br>
+    - &lt; 72 mg/dL: Cerrar infusión por 15 min y reiniciar según dextrostix. (Dar jugo si procede).</p>`;
+
+  if (!isNaN(infusionIar) && infusionIar > 0) {
+    const unidadesNph = infusionIar / 10;
+    const nphAM = unidadesNph * (2/3);
+    const nphPM = unidadesNph * (1/3);
+    html += `<p class="text-sm text-primary mb-2"><b>4. Transición a NPH (Cálculo para infusión 24h = ${infusionIar} mL):</b><br>
+      Dosis Total NPH calculada: <b>${unidadesNph.toFixed(1)} UI/día</b>.<br>
+      - AM (8:00h): <b>${nphAM.toFixed(1)} UI</b> (SC, 20 min antes del desayuno).<br>
+      - PM (20:00h): <b>${nphPM.toFixed(1)} UI</b> (SC, 20 min antes de la cena).<br>
+      <i>* Incrementar IAR al máximo (0.1U/kg/h) por 2h junto con el primer bocado de comida y luego suspender.</i></p>`;
+  }
+
+  const div = document.createElement("div");
+  div.className = `clinical-note bg-white border border-danger/20 p-4 rounded-md mb-2 shadow-sm`;
+  div.innerHTML = html;
+  container.appendChild(div);
 }
 
 function calcularSolucionRecomendada(total24h, preparacion) {
@@ -813,6 +912,14 @@ function calcular() {
     }
   }
 
+  // -- Procesar Cetoacidosis Diabética (CAD) --
+  if (currentView === 'cad') {
+    procesarCAD(pesoKg, mantenimiento);
+    if (document.querySelectorAll("#notasClinicas .clinical-note").length > 0) {
+      document.getElementById("notasClinicas").classList.remove("hidden");
+    }
+  }
+
   document.getElementById("resultado").classList.remove("hidden");
   document.getElementById("resultado").scrollIntoView({ behavior: 'smooth' });
 }
@@ -841,8 +948,8 @@ function copiarIndicaciones() {
   if (notasClinicasNodes.length > 0) {
     notasExtras = `\nNOTAS CLÍNICAS Y ANALÍTICAS\n` + 
       Array.from(notasClinicasNodes)
-        .map(node => "  - " + node.textContent.replace(/\s+/g, ' ').trim())
-        .join('\n') + `\n`;
+        .map(node => node.innerText)
+        .join('\n\n') + `\n`;
   }
 
   let textoACopiar = `REPORTE PEDICALC - ${currentView.toUpperCase()}\n\n` +
@@ -911,6 +1018,13 @@ function saveFormData() {
     nptProteinas: document.getElementById('nptProteinas')?.value,
     nptLipidos: document.getElementById('nptLipidos')?.value,
     nptVig: document.getElementById('nptVig')?.value,
+    cadGlucemia: document.getElementById('cadGlucemia')?.value,
+    cadNa: document.getElementById('cadNa')?.value,
+    cadVolCargas: document.getElementById('cadVolCargas')?.value,
+    cadEstrategia: document.getElementById('cadEstrategia')?.value,
+    cadPh: document.getElementById('cadPh')?.value,
+    cadEb: document.getElementById('cadEb')?.value,
+    cadInfusionIar: document.getElementById('cadInfusionIar')?.value,
     solucionBase: document.querySelector('input[name="solucionBase"]:checked')?.value,
     condiciones: obtenerCondicionesSeleccionadas()
   };
@@ -926,7 +1040,8 @@ function loadFormData() {
         'peso', 'edad', 'unidadEdad', 'edadGestacional', 'talla', 'creatinina', 
         'deshidratacion', 'tempF', 'tempA', 'naBasal', 'kBasal', 'clBasal', 
         'hco3Real', 'excesoBase', 'glucemia', 'albumina', 'calcioSerico', 'horasVida', 'scq',
-        'nptProteinas', 'nptLipidos', 'nptVig'
+        'nptProteinas', 'nptLipidos', 'nptVig',
+        'cadGlucemia', 'cadNa', 'cadVolCargas', 'cadEstrategia', 'cadPh', 'cadEb', 'cadInfusionIar'
       ];
       fields.forEach(f => {
         if(data[f]) {
@@ -971,6 +1086,14 @@ document.addEventListener("DOMContentLoaded", () => {
   attachValidation("edadGestacional", validateGestationalAge);
   attachValidation("tempF", value => validateTemperature(value, true));
   attachValidation("tempA", value => validateTemperature(value, false));
+  attachValidation("cadPh", value => {
+    if (value < 6.5 || value > 7.5) return { valid: false, message: "pH fuera de rango (6.5-7.5)" };
+    return { valid: true };
+  });
+  attachValidation("cadEb", value => {
+    if (value < -30 || value > 30) return { valid: false, message: "EB fuera de rango (-30 a 30)" };
+    return { valid: true };
+  });
 
   function updateAgeValidation() {
     let val = parseFloat(document.getElementById("edad").value);
@@ -990,12 +1113,26 @@ document.addEventListener("DOMContentLoaded", () => {
     checkbox.addEventListener('change', toggleTemperaturas);
   });
 
+  const cadGlucemia = document.getElementById('cadGlucemia');
+  if (cadGlucemia) {
+    cadGlucemia.addEventListener('input', function() {
+      const val = parseFloat(this.value);
+      const rec = document.getElementById('cadRecomendacionC');
+      if (val > 300) {
+        rec.classList.remove('hidden');
+      } else {
+        rec.classList.add('hidden');
+      }
+    });
+  }
+
   const hash = window.location.hash.replace('#', '');
   const hashToView = {
     'seccionHidratacion': 'hidratacion', 'hidratacion': 'hidratacion',
     'seccionNPT': 'npt', 'npt': 'npt',
     'seccionQuemados': 'quemados', 'quemados': 'quemados',
-    'seccionLaboratorio': 'laboratorio', 'laboratorio': 'laboratorio'
+    'seccionLaboratorio': 'laboratorio', 'laboratorio': 'laboratorio',
+    'seccionCad': 'cad', 'cad': 'cad'
   };
 
   const viewFromHash = hashToView[hash] || hashToView['seccion' + hash.charAt(0).toUpperCase() + hash.slice(1)];
