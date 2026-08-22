@@ -831,9 +831,9 @@ function copiarIndicaciones() {
   const flujoHorario = document.getElementById("flujoHorarioResult").textContent;
   
   const solucionElem = document.querySelector("#solucionRecomendadaDetalle .solution-card");
-  const solucionNombre = solucionElem.querySelector("h4").textContent;
-  const composicion = Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(1) li")).map(li => li.textContent).join('\n     ');
-  const aporteEstimado = Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(2) li")).map(li => li.textContent).join('\n     ');
+  const solucionNombre = solucionElem ? solucionElem.querySelector("h4").textContent : "No especificada";
+  const composicion = solucionElem ? Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(1) li")).map(li => li.textContent).join('\n     ') : "";
+  const aporteEstimado = solucionElem ? Array.from(solucionElem.querySelectorAll(".grid > div:nth-child(2) li")).map(li => li.textContent).join('\n     ') : "";
   
   let notasExtras = "";
   const notasClinicasNodes = document.querySelectorAll("#notasClinicas .clinical-note");
